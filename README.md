@@ -296,7 +296,10 @@ slop-review/
 ├── package.json                  # ROOT manifest — read only by `pi install git:`
 │                                  # so pi finds `pi.extensions: ./plugin/extensions/pi/index.ts`
 ├── docs/
-│   └── screenshot.png            # README image
+│   └── screenshot.png            # README image (also used by pi.image gallery preview)
+├── scripts/
+│   └── bump-version.mjs          # bumps all 6 manifests + lockfiles + README;
+│                                  # commits + tags. Run `scripts/bump-version.mjs --help`.
 ├── plugin/                       # Actual plugin contents — both marketplaces point here
 │                                  # AND this is what gets published to npm as `pi-slop-review`
 │   ├── .claude-plugin/
