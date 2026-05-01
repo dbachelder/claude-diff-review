@@ -52,26 +52,59 @@ CLI, served straight from GitHub.
 /plugin install claude-diff-review@claude-diff-review
 ```
 
+This registers the `/diff-review` slash command.
+
 **Codex CLI:**
 
+Codex separates marketplace registration (CLI) from plugin enablement (TUI).
+Both steps are required:
+
 ```bash
+# 1. Register the marketplace
 codex plugin marketplace add dbachelder/claude-diff-review
-codex plugin install claude-diff-review@claude-diff-review
 ```
 
-(Or whichever exact plugin-install incantation your Codex version uses — the
-marketplace add is the part that matters; the plugin shows up under the
-`claude-diff-review` marketplace name.)
+```
+# 2. Inside `codex`, type:
+/plugins
+```
 
-Either path clones this repo into the agent's plugin cache and registers the
-`/diff-review` slash command. The command runs the CLI directly out of the
-plugin checkout via `${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT}}/bin/plugin-run.sh`,
-which on first use does a one-time `npm install` inside the plugin directory —
-that's what installs [`glimpseui`](https://www.npmjs.com/package/glimpseui) and
-builds its per-platform native helper.
+In the plugin browser, switch to the `Diff Review` (claude-diff-review)
+marketplace tab, select the `claude-diff-review` plugin, and press *Install
+plugin*. This enables the `diff-review` skill, which the model auto-loads when
+you ask it to review your changes (or which you can invoke explicitly with
+`@diff-review`).
+
+> **Why a skill instead of a slash command in Codex?** Codex's plugin system
+> doesn't expose user-defined slash commands; it uses *skills* (markdown the
+> model loads when descriptions match the user's intent) and `@`-invocation.
+> The same repo serves the slash command to Claude Code via `commands/` and
+> the skill to Codex via `skills/`, both pointing at the same dispatcher.
+
+If you prefer to skip the TUI, you can enable the plugin by editing
+`~/.codex/config.toml` directly:
+
+```toml
+[plugins."claude-diff-review@claude-diff-review"]
+enabled = true
+```
+
+Then restart Codex.
+
+**How both paths work**
+
+Either install clones this repo into the agent's plugin cache. The slash
+command (Claude Code) and skill (Codex) both invoke
+`${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh`, which on first use does a one-time
+`npm install` inside the plugin directory — that's what installs
+[`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds its
+per-platform native helper. Codex sets `CLAUDE_PLUGIN_ROOT` for plugin shell
+calls (confirmed in the Codex 0.128 binary), so the same dispatcher works in
+both agents with no special-casing.
 
 No npm publish is involved: code updates flow through your agent's plugin
-update command (which pulls fresh commits from GitHub), and a stamp file in
+update command (which pulls fresh commits from GitHub — `/plugin update` in
+Claude Code, `codex plugin marketplace upgrade` in Codex). A stamp file in
 `node_modules/` makes `plugin-run.sh` re-run `npm install` only when
 `package.json` changes.
 
@@ -200,8 +233,8 @@ claude-diff-review/
 │   ├── plugin.json               # Claude Code plugin manifest
 │   └── marketplace.json          # Claude Code marketplace manifest
 ├── .codex-plugin/
-│   ├── plugin.json               # Codex CLI plugin manifest
-│   └── marketplace.json          # Codex CLI marketplace manifest
+│   └── plugin.json               # Codex CLI plugin manifest
+│                                  #   (Codex reads .claude-plugin/marketplace.json natively)
 ├── bin/
 │   ├── claude-diff-review.js     # CLI entry point
 │   └── plugin-run.sh             # Slash-command dispatcher (plugin install)
@@ -214,6 +247,9 @@ claude-diff-review/
 │   └── app.js
 ├── commands/
 │   └── diff-review.md            # Claude Code slash command
+├── skills/
+│   └── diff-review/
+│       └── SKILL.md              # Codex skill (auto-loaded; @-invokable)
 ├── scripts/
 │   └── install-command.js
 ├── package.json

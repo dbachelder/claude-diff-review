@@ -21,6 +21,7 @@
     "src",
     "web",
     "commands",
+    "skills",
     "scripts",
     ".claude-plugin",
     ".codex-plugin",
