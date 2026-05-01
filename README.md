@@ -5,7 +5,7 @@ A native diff review window for **[Claude Code](https://docs.anthropic.com/en/do
 Adds a `/diff-review` slash command that:
 
 1. Opens a native review window
-2. Lets you switch between `git diff`, `last commit`, and `all files` scopes
+2. Defaults to a **PR-style review** of all changes since your branch diverged from the base branch (auto-detected: `origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`), and also supports `last-commit` and `uncommitted` modes — see [Scopes](#scopes)
 3. Shows a collapsible sidebar with fuzzy file search and git status markers
 4. Lazy-loads file contents on demand as you switch files and scopes
 5. Lets you draft comments on the original side, modified side, or whole file
@@ -47,13 +47,58 @@ npm install -g .          # puts `claude-diff-review` on your PATH
 npm run install-command   # copies commands/diff-review.md → ~/.claude/commands/
 ```
 
-Then inside Claude Code:
+## Usage
+
+### From Claude Code
 
 ```
-/diff-review
+/diff-review                       # default: all changes since base branch merge-base
+/diff-review last-commit           # only HEAD vs HEAD^
+/diff-review uncommitted           # only working-tree changes vs HEAD
+/diff-review --base origin/develop # override the base branch
 ```
+
+The slash command declares an `argument-hint`, so Claude Code's input autocompletes the available forms.
 
 A native window opens. Browse files, leave inline or whole-file comments, then click **Submit feedback**. The CLI writes your feedback to `$TMPDIR/claude-diff-review-<timestamp>.md` and prints the path. Claude Code then `Read`s the file (visible in the UI) and addresses each item. Click **Cancel** or close the window to abort.
+
+### Standalone CLI
+
+The binary is a normal Node CLI; nothing about it is Claude-Code specific. You can invoke it directly to drive your own tool integrations:
+
+```
+claude-diff-review [base|last-commit|uncommitted|all] [--base <ref>] [--help]
+```
+
+Contract:
+
+| Outcome | stdout | exit |
+|---|---|---|
+| User submits feedback | `FEEDBACK_FILE: <absolute path>\n` | `0` |
+| User cancels / closes window / no reviewable files | `REVIEW_CANCELLED\n` | `0` |
+| Bad arguments | (nothing; usage on stderr) | `2` |
+| Other error | (nothing; error on stderr) | `1` |
+
+Status messages ("Opened review window…", base-ref resolution, etc.) go to **stderr**, so stdout stays clean for piping. Example:
+
+```bash
+out=$(claude-diff-review last-commit)
+case "$out" in
+  FEEDBACK_FILE:*) cat "${out#FEEDBACK_FILE: }" ;;
+  REVIEW_CANCELLED) echo "cancelled" ;;
+esac
+```
+
+### Scopes
+
+| Scope | Compares | Use when |
+|---|---|---|
+| `base` *(default)* | merge-base of HEAD and base branch → working tree | You want the full PR-style review of everything you've done on this branch, committed or not. Base branch is auto-detected: `origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`. Override with `--base <ref>`. |
+| `last-commit` | HEAD^ → HEAD | You just committed and want to review only that commit. |
+| `uncommitted` | HEAD → working tree | You want to review only what's still unstaged/staged but not committed. |
+| `all` | (no diff; shows working tree) | Browsing the tree without a diff scope. Mostly for debugging. |
+
+In `base` mode, the "git diff" tab in the window is relabelled `vs <base-ref>` so you can tell which ref you're comparing against. If no base branch is found, the CLI falls back to `uncommitted` and logs a warning.
 
 ## How it works
 
@@ -76,12 +121,12 @@ Claude Code UI: the `!`-bash output alone gets folded into the prompt as
 silent context, but the subsequent `Read` of the feedback file shows up in
 the chat as a regular tool call with the full file contents.
 
-- **`bin/claude-diff-review.js`** — CLI entry. Reads git state, opens the Glimpse window, handles file-content requests. On submit, writes the composed prompt to `$TMPDIR/claude-diff-review-<ts>.md` and prints `FEEDBACK_FILE: <path>` to stdout. On cancel, prints `REVIEW_CANCELLED`.
+- **`bin/claude-diff-review.js`** — CLI entry. Parses arguments, resolves the base ref + merge-base when in `base` mode, opens the Glimpse window, handles file-content requests. On submit, writes the composed prompt to `$TMPDIR/claude-diff-review-<ts>.md` and prints `FEEDBACK_FILE: <path>` to stdout. On cancel, prints `REVIEW_CANCELLED`.
 - **`src/git.js`** — Git scope/diff loader (ported from `src/git.ts`).
 - **`src/prompt.js`** — Feedback prompt composer (ported verbatim from `src/prompt.ts`).
 - **`src/ui.js`** — Inlines `web/index.html` + `web/app.js` for the Glimpse window.
 - **`web/`** — Static UI assets (Monaco, Tailwind via CDN, app logic). Copied from upstream.
-- **`commands/diff-review.md`** — Claude Code slash command. Runs `!claude-diff-review`, then instructs Claude to `Read` the feedback file and address each item.
+- **`commands/diff-review.md`** — Claude Code slash command. Forwards `$ARGUMENTS` to `claude-diff-review`, then instructs Claude to `Read` the feedback file and address each item.
 
 ## Layout
 

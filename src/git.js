@@ -1,5 +1,9 @@
 // Ported from pi-diff-review (https://github.com/badlogic/pi-diff-review)
 // Original: src/git.ts. Replaces pi.exec() with node:child_process.
+//
+// Extension: getReviewWindowData accepts an optional `gitDiffOriginalRef`
+// (e.g. a merge-base SHA) so the "git-diff" scope can mean "vs base branch"
+// instead of always "vs HEAD". loadReviewFileContents accepts the same.
 
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -43,6 +47,41 @@ export async function getRepoRoot(cwd) {
 async function hasHead(repoRoot) {
   const result = await execGit(repoRoot, ["rev-parse", "--verify", "HEAD"]);
   return result.code === 0;
+}
+
+async function refExists(repoRoot, ref) {
+  const result = await execGit(repoRoot, ["rev-parse", "--verify", "--quiet", ref]);
+  return result.code === 0;
+}
+
+/**
+ * Resolve a base branch ref. If `candidate` is provided, validate it exists.
+ * Otherwise auto-detect from common defaults.
+ * Returns the canonical ref name (e.g. "origin/main") or null if none found.
+ */
+export async function resolveBaseRef(repoRoot, candidate) {
+  if (candidate) {
+    if (await refExists(repoRoot, candidate)) return candidate;
+    return null;
+  }
+  // Try `origin/HEAD` first; resolve to its target if it's a symbolic ref.
+  const symRes = await execGit(repoRoot, ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"]);
+  if (symRes.code === 0) {
+    const target = symRes.stdout.trim();
+    if (target && await refExists(repoRoot, target)) return target;
+  }
+  for (const ref of ["origin/main", "main", "origin/master", "master"]) {
+    if (await refExists(repoRoot, ref)) return ref;
+  }
+  return null;
+}
+
+/** Returns the merge-base SHA of `baseRef` and HEAD, or null. */
+export async function resolveMergeBase(repoRoot, baseRef) {
+  const result = await execGit(repoRoot, ["merge-base", baseRef, "HEAD"]);
+  if (result.code !== 0) return null;
+  const sha = result.stdout.trim();
+  return sha.length > 0 ? sha : null;
 }
 
 function parseNameStatus(output) {
@@ -179,12 +218,19 @@ function upsertSeed(seeds, key, create) {
   return seed;
 }
 
-export async function getReviewWindowData(cwd) {
+/**
+ * @param {string} cwd
+ * @param {{ gitDiffOriginalRef?: string }} [options]
+ *   gitDiffOriginalRef: ref/SHA that the "git-diff" scope compares against.
+ *   Defaults to "HEAD". Pass a merge-base SHA for "vs base branch" mode.
+ */
+export async function getReviewWindowData(cwd, options = {}) {
   const repoRoot = await getRepoRoot(cwd);
   const repositoryHasHead = await hasHead(repoRoot);
+  const gitDiffOriginalRef = options.gitDiffOriginalRef ?? "HEAD";
 
   const trackedDiffOutput = repositoryHasHead
-    ? await runGit(repoRoot, ["diff", "--find-renames", "-M", "--name-status", "HEAD", "--"])
+    ? await runGit(repoRoot, ["diff", "--find-renames", "-M", "--name-status", gitDiffOriginalRef, "--"])
     : "";
   const untrackedOutput = await runGitAllowFailure(repoRoot, ["ls-files", "--others", "--exclude-standard"]);
   const trackedFilesOutput = await runGitAllowFailure(repoRoot, ["ls-files", "--cached"]);
@@ -239,7 +285,13 @@ export async function getReviewWindowData(cwd) {
   return { repoRoot, files };
 }
 
-export async function loadReviewFileContents(repoRoot, file, scope) {
+/**
+ * @param {string} repoRoot
+ * @param {object} file
+ * @param {"git-diff"|"last-commit"|"all-files"} scope
+ * @param {{ gitDiffOriginalRef?: string }} [options]
+ */
+export async function loadReviewFileContents(repoRoot, file, scope, options = {}) {
   if (scope === "all-files") {
     const content = file.hasWorkingTreeFile ? await getWorkingTreeContent(repoRoot, file.path) : "";
     return { originalContent: content, modifiedContent: content };
@@ -248,7 +300,9 @@ export async function loadReviewFileContents(repoRoot, file, scope) {
   const comparison = scope === "git-diff" ? file.gitDiff : file.lastCommit;
   if (comparison == null) return { originalContent: "", modifiedContent: "" };
 
-  const originalRevision = scope === "git-diff" ? "HEAD" : "HEAD^";
+  const originalRevision = scope === "git-diff"
+    ? (options.gitDiffOriginalRef ?? "HEAD")
+    : "HEAD^";
   const modifiedRevision = scope === "git-diff" ? null : "HEAD";
 
   const originalContent = comparison.oldPath == null

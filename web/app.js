@@ -1,12 +1,18 @@
 const reviewData = JSON.parse(document.getElementById("diff-review-data").textContent || "{}");
 
+function pickInitialScope() {
+  const requested = reviewData.initialScope;
+  if (requested === "git-diff" || requested === "last-commit" || requested === "all-files") {
+    return requested;
+  }
+  if (reviewData.files.some((file) => file.inGitDiff)) return "git-diff";
+  if (reviewData.files.some((file) => file.inLastCommit)) return "last-commit";
+  return "all-files";
+}
+
 const state = {
   activeFileId: null,
-  currentScope: reviewData.files.some((file) => file.inGitDiff)
-    ? "git-diff"
-    : reviewData.files.some((file) => file.inLastCommit)
-      ? "last-commit"
-      : "all-files",
+  currentScope: pickInitialScope(),
   comments: [],
   overallComment: "",
   hideUnchanged: false,
@@ -85,6 +91,8 @@ function inferLanguage(path) {
 }
 
 function scopeLabel(scope) {
+  const override = reviewData.scopeLabels && reviewData.scopeLabels[scope];
+  if (override) return override;
   switch (scope) {
     case "git-diff": return "Git diff";
     case "last-commit": return "Last commit";
@@ -93,6 +101,8 @@ function scopeLabel(scope) {
 }
 
 function scopeHint(scope) {
+  const override = reviewData.scopeHints && reviewData.scopeHints[scope];
+  if (override) return override;
   switch (scope) {
     case "git-diff":
       return "Review working tree changes against HEAD. Hover or click line numbers in the gutter to add an inline comment.";
