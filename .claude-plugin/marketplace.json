@@ -13,7 +13,7 @@
     {
       "name": "slop-review",
       "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds the /slop-review slash command in Claude Code, a `slop-review` skill in Codex CLI, and a pi extension exposing the same `/slop-review` command.",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "license": "MIT",
       "category": "Engineering",
       "homepage": "https://github.com/dbachelder/slop-review",
@@ -26,10 +26,7 @@
         "pi",
         "slop"
       ],
-      "source": {
-        "source": "local",
-        "path": "./"
-      },
+      "source": "./",
       "policy": {
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
