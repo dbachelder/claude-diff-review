@@ -2,10 +2,16 @@
 // claude-diff-review — Glimpse-powered native diff review window for Claude Code.
 // Adapted from pi-diff-review (https://github.com/badlogic/pi-diff-review) by Mario Zechner.
 //
-// On submit: prints composed feedback prompt to stdout and exits 0.
-// On cancel / window close: prints nothing and exits 0.
+// On submit: writes the composed feedback to a file under $TMPDIR and prints
+//   FEEDBACK_FILE: <path>
+// to stdout (so the Claude Code slash command can Read it back, making the
+// review visible in the UI).
+// On cancel / window close: prints "REVIEW_CANCELLED" to stdout.
 // On error: prints message to stderr and exits 1.
 
+import { writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { open } from "glimpseui";
 import { getReviewWindowData, loadReviewFileContents } from "../src/git.js";
 import { composeReviewPrompt } from "../src/prompt.js";
@@ -135,11 +141,15 @@ async function main() {
 
   if (terminalMessage == null || terminalMessage.type === "cancel") {
     log("Review cancelled.");
+    process.stdout.write("REVIEW_CANCELLED\n");
     return;
   }
 
   const prompt = composeReviewPrompt(files, terminalMessage);
-  process.stdout.write(prompt + "\n");
+  const outPath = join(tmpdir(), `claude-diff-review-${Date.now()}.md`);
+  await writeFile(outPath, prompt + "\n", "utf8");
+  process.stdout.write(`FEEDBACK_FILE: ${outPath}\n`);
+  log(`Wrote feedback to ${outPath}`);
 }
 
 main().catch((err) => {
