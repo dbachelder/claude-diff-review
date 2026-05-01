@@ -1,26 +1,27 @@
 {
-  "name": "claude-diff-review",
-  "version": "0.2.0",
-  "description": "Native, Monaco-powered diff review window. Browse changes since the merge-base with your base branch (or last commit / uncommitted), leave inline + file-level + overall comments, and have the agent address each item. Originally built for Claude Code; works in Codex CLI via the bundled `diff-review` skill.",
+  "name": "slop-review",
+  "version": "0.3.0",
+  "description": "Native, Monaco-powered diff review window for AI coding agents. Browse changes since the merge-base with your base branch (or last commit / uncommitted), leave inline + file-level + overall comments on the slop, and have the agent address each item. Originally built for Claude Code; works in Codex CLI via the bundled `slop-review` skill.",
   "author": {
     "name": "Dan Bachelder",
     "url": "https://github.com/dbachelder"
   },
-  "homepage": "https://github.com/dbachelder/claude-diff-review",
-  "repository": "https://github.com/dbachelder/claude-diff-review",
+  "homepage": "https://github.com/dbachelder/slop-review",
+  "repository": "https://github.com/dbachelder/slop-review",
   "license": "MIT",
   "keywords": [
     "diff",
     "review",
     "code-review",
     "monaco",
-    "glimpse"
+    "glimpse",
+    "slop"
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Diff Review",
+    "displayName": "Slop Review",
     "shortDescription": "Native diff review window with inline comments",
-    "longDescription": "Adds a `diff-review` skill that opens a native, Monaco-powered diff window. Defaults to a PR-style review of all changes since the merge-base with the auto-detected base branch, with last-commit / uncommitted / all-files modes also available. Comments are written to a temp file the agent then reads back, addressing each item.",
+    "longDescription": "Adds a `slop-review` skill that opens a native, Monaco-powered diff window. Defaults to a PR-style review of all changes since the merge-base with the auto-detected base branch, with last-commit / uncommitted / all-files modes also available. Comments are written to a temp file the agent then reads back, addressing each item.",
     "developerName": "Dan Bachelder",
     "category": "Engineering",
     "capabilities": [
@@ -28,10 +29,10 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/dbachelder/claude-diff-review",
+    "websiteURL": "https://github.com/dbachelder/slop-review",
     "defaultPrompt": [
       "Review my changes against main",
-      "@diff-review last-commit"
+      "@slop-review last-commit"
     ]
   }
 }

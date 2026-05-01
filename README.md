@@ -1,24 +1,24 @@
-# claude-diff-review
+# slop-review
 
-A native diff review window for terminal coding agents, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/). Ships as a plugin for both **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** and **[Codex CLI](https://github.com/openai/codex)**.
+A native diff review window for terminal coding agents, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/). Ships as a plugin for both **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** and **[Codex CLI](https://github.com/openai/codex)** — review the slop before you ship it.
 
-Adds a `/diff-review` slash command that:
+In Claude Code it adds a `/slop-review` slash command. In Codex CLI it ships as a `slop-review` skill (auto-invoked when you ask for a review, or explicitly via `@slop-review`). Both:
 
-1. Opens a native review window
-2. Defaults to a **PR-style review** of all changes since your branch diverged from the base branch (auto-detected: `origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`), and also supports `last-commit` and `uncommitted` modes — see [Scopes](#scopes)
-3. Shows a collapsible sidebar with fuzzy file search and git status markers
-4. Lazy-loads file contents on demand as you switch files and scopes
-5. Lets you draft comments on the original side, modified side, or whole file
-6. Writes the composed feedback to a temp file when you submit; the agent reads it back, so the review shows up in the chat as a regular tool call and gets addressed item-by-item
+1. Open a native review window
+2. Default to a **PR-style review** of all changes since your branch diverged from the base branch (auto-detected: `origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`), and also support `last-commit` and `uncommitted` modes — see [Scopes](#scopes)
+3. Show a collapsible sidebar with fuzzy file search and git status markers
+4. Lazy-load file contents on demand as you switch files and scopes
+5. Let you draft comments on the original side, modified side, or whole file
+6. Write the composed feedback to a temp file when you submit; the agent reads it back, so the review shows up in the chat as a regular tool call and gets addressed item-by-item
 
-![demo placeholder](https://placehold.co/900x500?text=claude-diff-review)
+![demo placeholder](https://placehold.co/900x500?text=slop-review)
 
 ## Credit
 
 This is a port of **[badlogic/pi-diff-review](https://github.com/badlogic/pi-diff-review)** by [Mario Zechner](https://github.com/badlogic), which provides the same UI for [`pi`](https://pi.dev). All of the heavy lifting — the Glimpse window orchestration, the Monaco-based review UI, the comment-and-prompt pipeline — was designed and implemented there. This repo:
 
 - Replaces pi's `ExtensionAPI` with Node `child_process` + a small CLI wrapper.
-- Replaces pi's editor injection with a temp-file + `Read` round-trip so it can be wired into Claude Code's `!`-style slash commands and stay visible in the chat UI.
+- Replaces pi's editor injection with a temp-file + `Read` round-trip so it can be wired into Claude Code's `!`-style slash commands and Codex's skill system, and stay visible in the chat UI.
 - Keeps `web/index.html` and `web/app.js` from the upstream essentially unchanged.
 
 If you use `pi`, just install the upstream extension instead. Please ⭐ the upstream.
@@ -27,7 +27,7 @@ If you use `pi`, just install the upstream extension instead. Please ⭐ the ups
 
 - macOS, Linux, or Windows
 - Node.js 20+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) **or** [Codex CLI](https://github.com/openai/codex)
 - Internet access at runtime for the Tailwind and Monaco CDNs used by the review window
 
 ### Windows notes
@@ -48,11 +48,11 @@ CLI, served straight from GitHub.
 
 ```bash
 # inside Claude Code
-/plugin marketplace add dbachelder/claude-diff-review
-/plugin install claude-diff-review@claude-diff-review
+/plugin marketplace add dbachelder/slop-review
+/plugin install slop-review@slop-review
 ```
 
-This registers the `/diff-review` slash command.
+This registers the `/slop-review` slash command.
 
 **Codex CLI:**
 
@@ -61,7 +61,7 @@ Both steps are required:
 
 ```bash
 # 1. Register the marketplace
-codex plugin marketplace add dbachelder/claude-diff-review
+codex plugin marketplace add dbachelder/slop-review
 ```
 
 ```
@@ -69,11 +69,10 @@ codex plugin marketplace add dbachelder/claude-diff-review
 /plugins
 ```
 
-In the plugin browser, switch to the `Diff Review` (claude-diff-review)
-marketplace tab, select the `claude-diff-review` plugin, and press *Install
-plugin*. This enables the `diff-review` skill, which the model auto-loads when
-you ask it to review your changes (or which you can invoke explicitly with
-`@diff-review`).
+In the plugin browser, switch to the `Slop Review` (slop-review) marketplace
+tab, select the `slop-review` plugin, and press *Install plugin*. This enables
+the `slop-review` skill, which the model auto-loads when you ask it to review
+your changes (or which you can invoke explicitly with `@slop-review`).
 
 > **Why a skill instead of a slash command in Codex?** Codex's plugin system
 > doesn't expose user-defined slash commands; it uses *skills* (markdown the
@@ -85,7 +84,7 @@ If you prefer to skip the TUI, you can enable the plugin by editing
 `~/.codex/config.toml` directly:
 
 ```toml
-[plugins."claude-diff-review@claude-diff-review"]
+[plugins."slop-review@slop-review"]
 enabled = true
 ```
 
@@ -99,8 +98,8 @@ command (Claude Code) and skill (Codex) both invoke
 `npm install` inside the plugin directory — that's what installs
 [`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds its
 per-platform native helper. Codex sets `CLAUDE_PLUGIN_ROOT` for plugin shell
-calls (confirmed in the Codex 0.128 binary), so the same dispatcher works in
-both agents with no special-casing.
+calls (confirmed in the codex-cli 0.128 binary), so the same dispatcher works
+in both agents with no special-casing.
 
 No npm publish is involved: code updates flow through your agent's plugin
 update command (which pulls fresh commits from GitHub — `/plugin update` in
@@ -117,7 +116,7 @@ globally — the slash command will prefer a globally-installed binary over the
 plugin-local install:
 
 ```bash
-npm install -g claude-diff-review
+npm install -g slop-review
 ```
 
 ### Alternative: npm global only (no plugin)
@@ -126,10 +125,10 @@ If you don't want to use the plugin system, install the CLI globally and copy
 the slash command into `~/.claude/commands/`:
 
 ```bash
-npm install -g claude-diff-review
+npm install -g slop-review
 # then either:
-curl -fsSL https://raw.githubusercontent.com/dbachelder/claude-diff-review/main/commands/diff-review.md \
-  -o ~/.claude/commands/diff-review.md
+curl -fsSL https://raw.githubusercontent.com/dbachelder/slop-review/main/commands/slop-review.md \
+  -o ~/.claude/commands/slop-review.md
 # or, if you cloned the repo:
 npm run install-command
 ```
@@ -137,11 +136,11 @@ npm run install-command
 ### Development install
 
 ```bash
-git clone https://github.com/dbachelder/claude-diff-review.git
-cd claude-diff-review
+git clone https://github.com/dbachelder/slop-review.git
+cd slop-review
 npm install
-npm install -g .          # puts `claude-diff-review` on your PATH
-npm run install-command   # copies commands/diff-review.md → ~/.claude/commands/
+npm install -g .          # puts `slop-review` on your PATH
+npm run install-command   # copies commands/slop-review.md → ~/.claude/commands/
 ```
 
 ## Usage
@@ -149,22 +148,42 @@ npm run install-command   # copies commands/diff-review.md → ~/.claude/command
 ### From Claude Code
 
 ```
-/diff-review                       # default: all changes since base branch merge-base
-/diff-review last-commit           # only HEAD vs HEAD^
-/diff-review uncommitted           # only working-tree changes vs HEAD
-/diff-review --base origin/develop # override the base branch
+/slop-review                       # default: all changes since base branch merge-base
+/slop-review last-commit           # only HEAD vs HEAD^
+/slop-review uncommitted           # only working-tree changes vs HEAD
+/slop-review --base origin/develop # override the base branch
 ```
 
 The slash command declares an `argument-hint`, so Claude Code's input autocompletes the available forms.
 
-A native window opens. Browse files, leave inline or whole-file comments, then click **Submit feedback**. The CLI writes your feedback to `$TMPDIR/claude-diff-review-<timestamp>.md` and prints the path. Claude Code then `Read`s the file (visible in the UI) and addresses each item. Click **Cancel** or close the window to abort.
+### From Codex CLI
+
+Just ask for a review in natural language and the `slop-review` skill auto-loads:
+
+```
+> review my changes
+> review the slop on this branch against main
+> open a PR-style review
+```
+
+Or invoke it explicitly:
+
+```
+> @slop-review
+> @slop-review last-commit
+> @slop-review --base origin/develop
+```
+
+### What happens
+
+A native window opens. Browse files, leave inline or whole-file comments, then click **Submit feedback**. The CLI writes your feedback to `$TMPDIR/slop-review-<timestamp>.md` and prints the path. The agent then reads the file (visible in the UI as a `Read` / file-read tool call) and addresses each item. Click **Cancel** or close the window to abort.
 
 ### Standalone CLI
 
-The binary is a normal Node CLI; nothing about it is Claude-Code specific. You can invoke it directly to drive your own tool integrations:
+The binary is a normal Node CLI; nothing about it is agent-specific. You can invoke it directly to drive your own tool integrations:
 
 ```
-claude-diff-review [base|last-commit|uncommitted|all] [--base <ref>] [--help]
+slop-review [base|last-commit|uncommitted|all] [--base <ref>] [--help]
 ```
 
 Contract:
@@ -179,7 +198,7 @@ Contract:
 Status messages ("Opened review window…", base-ref resolution, etc.) go to **stderr**, so stdout stays clean for piping. Example:
 
 ```bash
-out=$(claude-diff-review last-commit)
+out=$(slop-review last-commit)
 case "$out" in
   FEEDBACK_FILE:*) cat "${out#FEEDBACK_FILE: }" ;;
   REVIEW_CANCELLED) echo "cancelled" ;;
@@ -200,44 +219,45 @@ In `base` mode, the "git diff" tab in the window is relabelled `vs <base-ref>` s
 ## How it works
 
 ```
-  Claude Code               !`claude-diff-review`            claude-diff-review
-  /diff-review        ───────────────────────────────────►   (Node CLI)
-                                                                  │
-                                                                  │ glimpseui
-                                                                  ▼
-                          "FEEDBACK_FILE: <path>"            Native window
-                       ◄──────────────────────────           (Monaco diff)
+  Agent                     bash plugin-run.sh                slop-review
+  /slop-review        ───────────────────────────────────►    (Node CLI)
+  @slop-review                                                     │
+                                                                   │ glimpseui
+                                                                   ▼
+                          "FEEDBACK_FILE: <path>"             Native window
+                       ◄──────────────────────────            (Monaco diff)
   Read tool: <path>
         │
         ▼
-  feedback rendered in chat, Claude addresses each item
+  feedback rendered in chat, agent addresses each item
 ```
 
 The two-step (`Bash` → `Read`) flow is what makes the review visible in the
-Claude Code UI: the `!`-bash output alone gets folded into the prompt as
-silent context, but the subsequent `Read` of the feedback file shows up in
-the chat as a regular tool call with the full file contents.
+chat UI: the bash output alone gets folded into the prompt as context, but
+the subsequent `Read` of the feedback file shows up as a regular tool call
+with the full file contents.
 
-- **`bin/claude-diff-review.js`** — CLI entry. Parses arguments, resolves the base ref + merge-base when in `base` mode, opens the Glimpse window, handles file-content requests. On submit, writes the composed prompt to `$TMPDIR/claude-diff-review-<ts>.md` and prints `FEEDBACK_FILE: <path>` to stdout. On cancel, prints `REVIEW_CANCELLED`.
+- **`bin/slop-review.js`** — CLI entry. Parses arguments, resolves the base ref + merge-base when in `base` mode, opens the Glimpse window, handles file-content requests. On submit, writes the composed prompt to `$TMPDIR/slop-review-<ts>.md` and prints `FEEDBACK_FILE: <path>` to stdout. On cancel, prints `REVIEW_CANCELLED`.
+- **`bin/plugin-run.sh`** — Plugin dispatcher. Resolves the plugin root from `$CLAUDE_PLUGIN_ROOT` (set by both Claude Code and Codex), `npm install`s on first run, then exec's the CLI.
 - **`src/git.js`** — Git scope/diff loader (ported from `src/git.ts`).
 - **`src/prompt.js`** — Feedback prompt composer (ported verbatim from `src/prompt.ts`).
 - **`src/ui.js`** — Inlines `web/index.html` + `web/app.js` for the Glimpse window.
 - **`web/`** — Static UI assets (Monaco, Tailwind via CDN, app logic). Copied from upstream.
-- **`commands/diff-review.md`** — Claude Code slash command. Forwards `$ARGUMENTS` to `claude-diff-review`, then instructs Claude to `Read` the feedback file and address each item.
+- **`commands/slop-review.md`** — Claude Code slash command. Forwards `$ARGUMENTS` to the dispatcher, then instructs Claude to `Read` the feedback file and address each item.
+- **`skills/slop-review/SKILL.md`** — Codex skill. Same instructions, formatted as a skill that the model auto-loads when the user asks for a review.
 
 ## Layout
 
 ```
-claude-diff-review/
+slop-review/
 ├── .claude-plugin/
 │   ├── plugin.json               # Claude Code plugin manifest
-│   └── marketplace.json          # Claude Code marketplace manifest
+│   └── marketplace.json          # Marketplace manifest (also read by Codex)
 ├── .codex-plugin/
 │   └── plugin.json               # Codex CLI plugin manifest
-│                                  #   (Codex reads .claude-plugin/marketplace.json natively)
 ├── bin/
-│   ├── claude-diff-review.js     # CLI entry point
-│   └── plugin-run.sh             # Slash-command dispatcher (plugin install)
+│   ├── slop-review.js            # CLI entry point
+│   └── plugin-run.sh             # Plugin dispatcher (Claude + Codex)
 ├── src/
 │   ├── git.js
 │   ├── prompt.js
@@ -246,9 +266,9 @@ claude-diff-review/
 │   ├── index.html
 │   └── app.js
 ├── commands/
-│   └── diff-review.md            # Claude Code slash command
+│   └── slop-review.md            # Claude Code slash command
 ├── skills/
-│   └── diff-review/
+│   └── slop-review/
 │       └── SKILL.md              # Codex skill (auto-loaded; @-invokable)
 ├── scripts/
 │   └── install-command.js
@@ -260,12 +280,12 @@ claude-diff-review/
 
 ## Differences from the upstream pi extension
 
-| Concern | pi-diff-review | claude-diff-review |
+| Concern | pi-diff-review | slop-review |
 |---|---|---|
-| Slash-command host | pi `ExtensionAPI` | Claude Code `!`-bash slash command |
+| Host | pi `ExtensionAPI` | Claude Code slash command + Codex skill |
 | Git execution | `pi.exec` | `node:child_process` |
 | "Waiting…" indicator | pi-tui custom panel | stderr log line |
-| Result delivery | `ctx.ui.setEditorText(prompt)` | Temp file path on stdout → Claude `Read`s the file (visible in UI) |
+| Result delivery | `ctx.ui.setEditorText(prompt)` | Temp file path on stdout → agent `Read`s the file (visible in UI) |
 | Language | TypeScript (typed against pi types) | Plain ESM JavaScript |
 
 ## License

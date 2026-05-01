@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// claude-diff-review — Glimpse-powered native diff review window for Claude Code.
+// slop-review — Glimpse-powered native diff review window for AI coding agents.
 // Adapted from pi-diff-review (https://github.com/badlogic/pi-diff-review) by Mario Zechner.
 //
 // Usage:
-//   claude-diff-review [scope] [--base <ref>]
+//   slop-review [scope] [--base <ref>]
 //
 // Scopes:
 //   base          (default) all changes since the merge-base with the base branch
@@ -17,7 +17,7 @@
 //   --base <ref>  override the base branch (only used in `base` mode)
 //   --help, -h    show this help
 //
-// On submit: writes the composed feedback to $TMPDIR/claude-diff-review-<ts>.md and prints
+// On submit: writes the composed feedback to $TMPDIR/slop-review-<ts>.md and prints
 //            "FEEDBACK_FILE: <path>" to stdout.
 // On cancel / window close: prints "REVIEW_CANCELLED" to stdout.
 // On error: prints message to stderr and exits 1.
@@ -38,10 +38,10 @@ import {
 import { composeReviewPrompt } from "../src/prompt.js";
 import { buildReviewHtml } from "../src/ui.js";
 
-const HELP = `claude-diff-review — open a native diff review window for Claude Code.
+const HELP = `slop-review — open a native diff review window for AI coding agents.
 
 Usage:
-  claude-diff-review [scope] [--base <ref>] [--help]
+  slop-review [scope] [--base <ref>] [--help]
 
 Scopes (positional or --scope <name>):
   base          (default) all changes since merge-base with base branch
@@ -204,7 +204,7 @@ async function main() {
   const win = open(html, {
     width: 1680,
     height: 1020,
-    title: `claude diff review${titleSuffix}`,
+    title: `slop review${titleSuffix}`,
   });
 
   log(`Opened review window for ${repoRoot} (${files.length} files, scope: ${args.scope}${ctx.baseRefName ? `, base: ${ctx.baseRefName}` : ""}).`);
@@ -310,7 +310,7 @@ async function main() {
   }
 
   const prompt = composeReviewPrompt(files, terminalMessage);
-  const outPath = join(tmpdir(), `claude-diff-review-${Date.now()}.md`);
+  const outPath = join(tmpdir(), `slop-review-${Date.now()}.md`);
   await writeFile(outPath, prompt + "\n", "utf8");
   process.stdout.write(`FEEDBACK_FILE: ${outPath}\n`);
   log(`Wrote feedback to ${outPath}`);
@@ -318,6 +318,6 @@ async function main() {
 
 main().catch((err) => {
   const message = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`claude-diff-review failed: ${message}\n`);
+  process.stderr.write(`slop-review failed: ${message}\n`);
   process.exit(1);
 });

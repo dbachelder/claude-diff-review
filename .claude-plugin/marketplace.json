@@ -1,28 +1,29 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-diff-review",
-  "description": "Single-plugin marketplace exposing claude-diff-review as a plugin for Claude Code and Codex CLI.",
+  "name": "slop-review",
+  "description": "Single-plugin marketplace exposing slop-review as a plugin for Claude Code and Codex CLI.",
   "owner": {
     "name": "Dan Bachelder",
     "url": "https://github.com/dbachelder"
   },
   "interface": {
-    "displayName": "Diff Review"
+    "displayName": "Slop Review"
   },
   "plugins": [
     {
-      "name": "claude-diff-review",
-      "description": "Native diff review window (Monaco + Glimpse). Adds the /diff-review slash command in Claude Code and a `diff-review` skill in Codex CLI.",
-      "version": "0.2.0",
+      "name": "slop-review",
+      "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds the /slop-review slash command in Claude Code and a `slop-review` skill in Codex CLI.",
+      "version": "0.3.0",
       "license": "MIT",
       "category": "Engineering",
-      "homepage": "https://github.com/dbachelder/claude-diff-review",
+      "homepage": "https://github.com/dbachelder/slop-review",
       "keywords": [
         "diff",
         "review",
         "code-review",
         "monaco",
-        "glimpse"
+        "glimpse",
+        "slop"
       ],
       "source": {
         "source": "local",

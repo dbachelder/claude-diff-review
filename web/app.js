@@ -1,4 +1,4 @@
-const reviewData = JSON.parse(document.getElementById("diff-review-data").textContent || "{}");
+const reviewData = JSON.parse(document.getElementById("slop-review-data").textContent || "{}");
 
 function pickInitialScope() {
   const requested = reviewData.initialScope;

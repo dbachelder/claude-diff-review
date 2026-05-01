@@ -1,5 +1,5 @@
-claude-diff-review
-==================
+slop-review
+===========
 
 This project is a derivative work of:
 
@@ -14,7 +14,7 @@ README states: "It is my hope, that someone takes this idea and makes it
 gud."). If the upstream author objects to redistribution under MIT or any
 other terms, please open an issue at:
 
-  https://github.com/dbachelder/claude-diff-review/issues
+  https://github.com/dbachelder/slop-review/issues
 
 The following files are essentially copied verbatim from the upstream:
 

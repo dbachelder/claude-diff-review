@@ -1,20 +1,20 @@
 {
-  "name": "claude-diff-review",
-  "version": "0.2.0",
-  "description": "Native diff review window for Claude Code — opens a Monaco-powered review UI in a Glimpse window and feeds the resulting prompt back into Claude Code via a slash command. Adapted from badlogic/pi-diff-review.",
+  "name": "slop-review",
+  "version": "0.3.0",
+  "description": "Native diff review window for AI coding agents (Claude Code, Codex CLI). Opens a Monaco-powered review UI in a Glimpse window so you can leave inline / file-level / overall comments on the agent's slop, then have the agent address each item. Adapted from badlogic/pi-diff-review.",
   "license": "MIT",
   "author": "Dan Bachelder <dbachelder@users.noreply.github.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dbachelder/claude-diff-review.git"
+    "url": "git+https://github.com/dbachelder/slop-review.git"
   },
-  "homepage": "https://github.com/dbachelder/claude-diff-review#readme",
+  "homepage": "https://github.com/dbachelder/slop-review#readme",
   "bugs": {
-    "url": "https://github.com/dbachelder/claude-diff-review/issues"
+    "url": "https://github.com/dbachelder/slop-review/issues"
   },
   "type": "module",
   "bin": {
-    "claude-diff-review": "bin/claude-diff-review.js"
+    "slop-review": "bin/slop-review.js"
   },
   "files": [
     "bin",
@@ -26,7 +26,8 @@
     ".claude-plugin",
     ".codex-plugin",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "engines": {
     "node": ">=20"
@@ -39,12 +40,14 @@
   },
   "keywords": [
     "claude-code",
-    "claude",
+    "codex",
+    "ai",
     "diff",
     "review",
     "code-review",
     "monaco",
     "glimpse",
-    "slash-command"
+    "slash-command",
+    "slop"
   ]
 }

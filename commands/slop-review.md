@@ -3,9 +3,9 @@ description: Open a native diff review window (Monaco-powered) and address the r
 argument-hint: "[base|last-commit|uncommitted|all] [--base <ref>]"
 ---
 
-# /diff-review
+# /slop-review
 
-Open the native diff review window so the user can leave inline / file-level / overall comments on the current changes, then address each comment.
+Open the native diff review window so the user can leave inline / file-level / overall comments on the current changes (a.k.a. the slop), then address each comment.
 
 ## Step 1 — run the dispatcher
 
@@ -16,10 +16,10 @@ if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/plugin-ru
   bash "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS
 elif [ -n "${CODEX_PLUGIN_ROOT:-}" ] && [ -x "${CODEX_PLUGIN_ROOT}/bin/plugin-run.sh" ]; then
   bash "${CODEX_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS
-elif command -v claude-diff-review >/dev/null 2>&1; then
-  claude-diff-review $ARGUMENTS
+elif command -v slop-review >/dev/null 2>&1; then
+  slop-review $ARGUMENTS
 else
-  echo "claude-diff-review is not available. Install the plugin via your agent's plugin/marketplace command, or run: npm install -g claude-diff-review" >&2
+  echo "slop-review is not available. Install the plugin via your agent's plugin/marketplace command, or run: npm install -g slop-review" >&2
   exit 1
 fi
 ```
