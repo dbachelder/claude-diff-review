@@ -1,15 +1,35 @@
 name: Publish to npm
 
 # Publishes ./plugin/ to npm as `pi-slop-review` whenever a tag of the form
-# vN.N.N is pushed. The workflow refuses to publish if package.json's version
-# does not match the tag, and skips silently if the version is already on the
+# vN.N.N is pushed. Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN
+# required. The workflow refuses to publish if package.json's version does
+# not match the tag, and skips silently if the version is already on the
 # registry (so re-running on an existing tag is a no-op).
 #
-# Setup required (one-time):
-#   1. npm: create an automation/granular access token with publish rights
-#      for `pi-slop-review` (see https://docs.npmjs.com/creating-and-viewing-access-tokens).
-#   2. GitHub: Settings -> Secrets and variables -> Actions -> New repository
-#      secret. Name it NPM_TOKEN, paste the npm token.
+# ONE-TIME SETUP (npmjs.com side):
+#
+#   1. The package `pi-slop-review` must exist on npm before you can
+#      configure trusted publishing for it. For the very first publish,
+#      either:
+#         (a) run `npm publish` locally from ./plugin once with a normal
+#             npm login, then configure trusted publishing for subsequent
+#             releases; OR
+#         (b) use npm's "claim package name" flow on npmjs.com to reserve
+#             the name with trusted publishing already configured.
+#
+#   2. On https://www.npmjs.com/package/pi-slop-review/access (Settings ->
+#      Publishing access), add a Trusted Publisher with:
+#         Publisher:        GitHub Actions
+#         Organization:     dbachelder
+#         Repository:       slop-review
+#         Workflow file:    .github/workflows/publish-npm.yml
+#         Environment:      (leave blank unless you also wire up a GitHub
+#                            environment named below in `environment:`)
+#
+#   3. After step 2, the workflow can publish with no secrets at all.
+#
+# Trusted Publishing requires npm CLI >= 11.5.1. Node 20's bundled npm is
+# 10.x, so the workflow installs the latest npm explicitly before publish.
 
 on:
   push:
@@ -27,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # for npm provenance attestation
+      id-token: write   # required for npm Trusted Publishing OIDC + provenance
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,6 +60,11 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Upgrade npm to >= 11.5.1 (required for Trusted Publishing)
+        run: |
+          npm install -g npm@latest
+          npm --version
+
       - name: Resolve tag and package version
         id: versions
         working-directory: plugin
@@ -51,10 +76,12 @@ jobs:
           tag_version="${tag#v}"
           pkg_version=$(node -p "require('./package.json').version")
           pkg_name=$(node -p "require('./package.json').name")
-          echo "tag=$tag"            >> "$GITHUB_OUTPUT"
-          echo "tag_version=$tag_version" >> "$GITHUB_OUTPUT"
-          echo "pkg_version=$pkg_version" >> "$GITHUB_OUTPUT"
-          echo "pkg_name=$pkg_name"  >> "$GITHUB_OUTPUT"
+          {
+            echo "tag=$tag"
+            echo "tag_version=$tag_version"
+            echo "pkg_version=$pkg_version"
+            echo "pkg_name=$pkg_name"
+          } >> "$GITHUB_OUTPUT"
           echo "Tag:           $tag"
           echo "Tag version:   $tag_version"
           echo "Package name:  $pkg_name"
@@ -85,11 +112,12 @@ jobs:
         working-directory: plugin
         run: npm ci --omit=dev --no-audit --no-fund
 
-      - name: Publish
+      - name: Publish (Trusted Publishing — OIDC, no secret token)
         if: steps.already.outputs.skip != 'true'
         working-directory: plugin
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN: the npm CLI obtains a short-lived OIDC token
+        # from GitHub via id-token: write and exchanges it with npmjs.com.
+        # `--provenance` is implied by Trusted Publishing but kept explicit.
         run: npm publish --access public --provenance
 
       - name: Summary
@@ -97,6 +125,6 @@ jobs:
           if [ "${{ steps.already.outputs.skip }}" = "true" ]; then
             echo "### \`${{ steps.versions.outputs.pkg_name }}@${{ steps.versions.outputs.pkg_version }}\` was already on npm — nothing to do." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### Published \`${{ steps.versions.outputs.pkg_name }}@${{ steps.versions.outputs.pkg_version }}\` to npm." >> "$GITHUB_STEP_SUMMARY"
+            echo "### Published \`${{ steps.versions.outputs.pkg_name }}@${{ steps.versions.outputs.pkg_version }}\` to npm via Trusted Publishing." >> "$GITHUB_STEP_SUMMARY"
             echo "https://www.npmjs.com/package/${{ steps.versions.outputs.pkg_name }}/v/${{ steps.versions.outputs.pkg_version }}" >> "$GITHUB_STEP_SUMMARY"
           fi
