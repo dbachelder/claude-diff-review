@@ -1,8 +1,12 @@
 # slop-review
 
-A native diff review window for terminal coding agents, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/). Ships as a plugin for both **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** and **[Codex CLI](https://github.com/openai/codex)** — review the slop before you ship it.
+A native diff review window for terminal coding agents, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/). Ships for **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)**, **[Codex CLI](https://github.com/openai/codex)**, and **[pi](https://pi.dev)** — review the slop before you ship it.
 
-In Claude Code it adds a `/slop-review` slash command. In Codex CLI it ships as a `slop-review` skill (auto-invoked when you ask for a review, or explicitly via `@slop-review`). Both:
+- In **Claude Code** it adds a `/slop-review` slash command.
+- In **Codex CLI** it ships as a `slop-review` skill (auto-invoked when you ask for a review, or explicitly via `@slop-review`).
+- In **pi** it registers a `/slop-review` slash command (the upstream this is forked from — see Credit below).
+
+All three:
 
 1. Open a native review window
 2. Default to a **PR-style review** of all changes since your branch diverged from the base branch (auto-detected: `origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`), and also support `last-commit` and `uncommitted` modes — see [Scopes](#scopes)
@@ -15,19 +19,21 @@ In Claude Code it adds a `/slop-review` slash command. In Codex CLI it ships as 
 
 ## Credit
 
-This is a port of **[badlogic/pi-diff-review](https://github.com/badlogic/pi-diff-review)** by [Mario Zechner](https://github.com/badlogic), which provides the same UI for [`pi`](https://pi.dev). All of the heavy lifting — the Glimpse window orchestration, the Monaco-based review UI, the comment-and-prompt pipeline — was designed and implemented there. This repo:
+This is a fork of **[badlogic/pi-diff-review](https://github.com/badlogic/pi-diff-review)** by [Mario Zechner](https://github.com/badlogic), which provides the same UI for [`pi`](https://pi.dev). All of the heavy lifting — the Glimpse window orchestration, the Monaco-based review UI, the comment-and-prompt pipeline, and the in-terminal Escape-to-cancel waiting overlay (in our pi adapter) — was designed and implemented there. This repo:
 
-- Replaces pi's `ExtensionAPI` with Node `child_process` + a small CLI wrapper.
-- Replaces pi's editor injection with a temp-file + `Read` round-trip so it can be wired into Claude Code's `!`-style slash commands and Codex's skill system, and stay visible in the chat UI.
+- Adds a standalone Node CLI (`bin/slop-review.js`) so the same UI can be driven from any host that can shell out.
+- Adds Claude Code (slash command) and Codex CLI (skill) adapters that use a temp-file + `Read` round-trip so the review stays visible in the chat UI.
+- Adds a pi extension under `extensions/pi/` that registers `/slop-review` in pi (parallel to the upstream's `/diff-review`) and uses upstream's idiomatic `setEditorText` flow — same UX as the upstream.
+- Adds PR-style review (everything since merge-base with the auto-detected base branch) as the default scope, with explicit `last-commit`, `uncommitted`, and `all` modes also available.
 - Keeps `web/index.html` and `web/app.js` from the upstream essentially unchanged.
 
-If you use `pi`, just install the upstream extension instead. Please ⭐ the upstream.
+If you only use pi and just want the upstream behavior, install [`badlogic/pi-diff-review`](https://github.com/badlogic/pi-diff-review) instead. Please ⭐ the upstream regardless.
 
 ## Requirements
 
 - macOS, Linux, or Windows
 - Node.js 20+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) **or** [Codex CLI](https://github.com/openai/codex)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI](https://github.com/openai/codex), **or** [pi](https://pi.dev)
 - Internet access at runtime for the Tailwind and Monaco CDNs used by the review window
 
 ### Windows notes
@@ -90,22 +96,65 @@ enabled = true
 
 Then restart Codex.
 
-**How both paths work**
+**pi:**
 
-Either install clones this repo into the agent's plugin cache. The slash
-command (Claude Code) and skill (Codex) both invoke
-`${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh`, which on first use does a one-time
-`npm install` inside the plugin directory — that's what installs
+pi's package system handles the install end-to-end — `pi install` clones the
+repo into pi's package directory, runs `npm install` for `glimpseui`, and
+registers the `/slop-review` command:
+
+```bash
+# Global install
+pi install git:github.com/dbachelder/slop-review
+
+# Or pin to a tag
+pi install git:github.com/dbachelder/slop-review@v0.4.0
+
+# Or try without installing (single-run)
+pi -e git:github.com/dbachelder/slop-review
+```
+
+Then inside pi:
+
+```
+/slop-review                       # default: PR-style review
+/slop-review last-commit
+/slop-review --base origin/develop
+```
+
+When you submit feedback, the composed prompt is dropped into pi's input
+editor (idiomatic for pi — same UX as the upstream `pi-diff-review`). Press
+`Escape` while the window is open to cancel.
+
+To update later: `pi update` or `pi update git:github.com/dbachelder/slop-review`.
+
+**How all three paths work**
+
+Three thin host adapters, one shared core:
+
+| Host | Adapter | How it surfaces in the host | Result delivery |
+|---|---|---|---|
+| Claude Code | `commands/slop-review.md` → `bin/plugin-run.sh` → `bin/slop-review.js` | `/slop-review` slash command | Temp file path + agent `Read`s it back |
+| Codex CLI | `skills/slop-review/SKILL.md` → `bin/plugin-run.sh` → `bin/slop-review.js` | `slop-review` skill (auto-load + `@slop-review`) | Temp file path + agent `Read`s it back |
+| pi | `extensions/pi/index.ts` — uses `pi.exec` and `glimpseui` directly, no CLI | `/slop-review` slash command | `ctx.ui.setEditorText(prompt)` — prompt drops into pi's input editor |
+
+All three share `src/git.js` (factory pattern — host injects an `exec`
+callable), `src/prompt.js`, `src/ui.js`, and the `web/` Monaco bundle.
+
+For Claude Code and Codex, either install clones this repo into the agent's
+plugin cache; `bin/plugin-run.sh` does a one-time `npm install` inside the
+plugin directory on first invocation — that's what installs
 [`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds its
 per-platform native helper. Codex sets `CLAUDE_PLUGIN_ROOT` for plugin shell
 calls (confirmed in the codex-cli 0.128 binary), so the same dispatcher works
 in both agents with no special-casing.
 
-No npm publish is involved: code updates flow through your agent's plugin
-update command (which pulls fresh commits from GitHub — `/plugin update` in
-Claude Code, `codex plugin marketplace upgrade` in Codex). A stamp file in
-`node_modules/` makes `plugin-run.sh` re-run `npm install` only when
-`package.json` changes.
+For pi, `pi install` handles the clone + `npm install` for you.
+
+No npm publish is involved: code updates flow through your agent's update
+command — `/plugin update` in Claude Code, `codex plugin marketplace upgrade`
+in Codex, `pi update` in pi. A stamp file in `node_modules/` makes
+`plugin-run.sh` re-run `npm install` only when `package.json` changes (for
+Claude/Codex). pi handles dep refresh on its own.
 
 > **macOS toolchain:** building the Glimpse native helper needs Xcode Command
 > Line Tools (`xcode-select --install`). The CLI does a preflight check and
@@ -155,6 +204,22 @@ npm run install-command   # copies commands/slop-review.md → ~/.claude/command
 ```
 
 The slash command declares an `argument-hint`, so Claude Code's input autocompletes the available forms.
+
+### From pi
+
+```
+/slop-review                       # default: all changes since base branch merge-base
+/slop-review last-commit
+/slop-review uncommitted
+/slop-review --base origin/develop
+```
+
+The pi adapter also registers an autocomplete for the scope argument, so
+tab-complete works in pi's input.
+
+When you submit, the composed feedback is dropped into pi's input editor for
+you to review and send. While the window is open, press `Escape` from the
+pi terminal to cancel.
 
 ### From Codex CLI
 
@@ -256,13 +321,14 @@ slop-review/
 ├── .codex-plugin/
 │   └── plugin.json               # Codex CLI plugin manifest
 ├── bin/
-│   ├── slop-review.js            # CLI entry point
+│   ├── slop-review.js            # CLI entry point (Claude + Codex)
 │   └── plugin-run.sh             # Plugin dispatcher (Claude + Codex)
-├── src/
-│   ├── git.js
-│   ├── prompt.js
-│   └── ui.js
-├── web/
+├── src/                          # SHARED across all three host adapters
+│   ├── args.js                   # arg parser (CLI + pi)
+│   ├── git.js                    # createGitOps({ exec }) — host injects exec
+│   ├── prompt.js                 # composes the feedback prompt
+│   └── ui.js                     # inlines web/ into a single HTML doc
+├── web/                          # Monaco UI bundle (mostly unchanged from upstream)
 │   ├── index.html
 │   └── app.js
 ├── commands/
@@ -270,9 +336,13 @@ slop-review/
 ├── skills/
 │   └── slop-review/
 │       └── SKILL.md              # Codex skill (auto-loaded; @-invokable)
+├── extensions/
+│   └── pi/
+│       ├── index.ts              # pi extension entry (registers /slop-review)
+│       └── types.ts              # wire-format types for the Glimpse ↔ host channel
 ├── scripts/
 │   └── install-command.js
-├── package.json
+├── package.json                  # bin: slop-review; pi.extensions: extensions/pi/index.ts
 ├── LICENSE
 ├── NOTICE
 └── README.md
@@ -282,11 +352,16 @@ slop-review/
 
 | Concern | pi-diff-review | slop-review |
 |---|---|---|
-| Host | pi `ExtensionAPI` | Claude Code slash command + Codex skill |
-| Git execution | `pi.exec` | `node:child_process` |
-| "Waiting…" indicator | pi-tui custom panel | stderr log line |
-| Result delivery | `ctx.ui.setEditorText(prompt)` | Temp file path on stdout → agent `Read`s the file (visible in UI) |
-| Language | TypeScript (typed against pi types) | Plain ESM JavaScript |
+| Hosts | pi only | pi + Claude Code + Codex CLI |
+| pi command name | `/diff-review` | `/slop-review` |
+| Default scope | All three tabs visible, no default scope | PR-style: changes since merge-base with auto-detected base branch |
+| Args | (none) | `[base\|last-commit\|uncommitted\|all] [--base <ref>]` |
+| pi result delivery | `ctx.ui.setEditorText(prompt)` | Same |
+| pi waiting UI | pi-tui custom panel + Escape-to-cancel | Same (verbatim port) |
+| Claude/Codex result delivery | n/a | Temp file path on stdout → agent `Read`s the file (visible in chat UI) |
+| Git execution (pi) | `pi.exec` | Same (host-injected via `createGitOps({ exec: pi.exec })`) |
+| Git execution (Claude/Codex) | n/a | `node:child_process` |
+| Language | TypeScript | TypeScript for the pi extension; plain ESM JavaScript everywhere else |
 
 ## License
 

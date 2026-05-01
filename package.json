@@ -1,6 +1,6 @@
 {
   "name": "slop-review",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Native diff review window for AI coding agents (Claude Code, Codex CLI). Opens a Monaco-powered review UI in a Glimpse window so you can leave inline / file-level / overall comments on the agent's slop, then have the agent address each item. Adapted from badlogic/pi-diff-review.",
   "license": "MIT",
   "author": "Dan Bachelder <dbachelder@users.noreply.github.com>",
@@ -16,12 +16,16 @@
   "bin": {
     "slop-review": "bin/slop-review.js"
   },
+  "pi": {
+    "extensions": ["./extensions/pi/index.ts"]
+  },
   "files": [
     "bin",
     "src",
     "web",
     "commands",
     "skills",
+    "extensions",
     "scripts",
     ".claude-plugin",
     ".codex-plugin",
@@ -38,9 +42,19 @@
   "dependencies": {
     "glimpseui": "^0.6.0"
   },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@mariozechner/pi-coding-agent": {
+      "optional": true
+    }
+  },
   "keywords": [
     "claude-code",
     "codex",
+    "pi",
+    "pi-coding-agent",
     "ai",
     "diff",
     "review",

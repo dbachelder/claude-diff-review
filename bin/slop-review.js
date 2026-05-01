@@ -28,6 +28,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { open } from "glimpseui";
+import { INITIAL_TAB, parseArgs } from "../src/args.js";
 import {
   getRepoRoot,
   getReviewWindowData,
@@ -54,42 +55,6 @@ Options:
                 origin/main, main, origin/master, master)
   -h, --help    show this help and exit
 `;
-
-const VALID_SCOPES = new Set(["base", "last-commit", "uncommitted", "all"]);
-
-// CLI scope -> initial tab in the web UI.
-const INITIAL_TAB = {
-  base: "git-diff",
-  uncommitted: "git-diff",
-  "last-commit": "last-commit",
-  all: "all-files",
-};
-
-function parseArgs(argv) {
-  const args = { scope: "base", base: null, help: false };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === "-h" || a === "--help") {
-      args.help = true;
-    } else if (a === "--scope" || a === "-s") {
-      args.scope = argv[++i];
-    } else if (a.startsWith("--scope=")) {
-      args.scope = a.slice("--scope=".length);
-    } else if (a === "--base" || a === "-b") {
-      args.base = argv[++i];
-    } else if (a.startsWith("--base=")) {
-      args.base = a.slice("--base=".length);
-    } else if (VALID_SCOPES.has(a)) {
-      args.scope = a;
-    } else {
-      throw new Error(`Unknown argument: ${a}\n\n${HELP}`);
-    }
-  }
-  if (!VALID_SCOPES.has(args.scope)) {
-    throw new Error(`Invalid scope "${args.scope}". Must be one of: ${[...VALID_SCOPES].join(", ")}`);
-  }
-  return args;
-}
 
 function escapeForInlineScript(value) {
   return value.replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
@@ -168,7 +133,8 @@ async function main() {
   try {
     args = parseArgs(process.argv.slice(2));
   } catch (err) {
-    process.stderr.write((err instanceof Error ? err.message : String(err)) + "\n");
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`${msg}\n\n${HELP}`);
     process.exit(2);
   }
 

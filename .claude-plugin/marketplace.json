@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "slop-review",
-      "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds the /slop-review slash command in Claude Code and a `slop-review` skill in Codex CLI.",
-      "version": "0.3.0",
+      "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds the /slop-review slash command in Claude Code, a `slop-review` skill in Codex CLI, and a pi extension exposing the same `/slop-review` command.",
+      "version": "0.4.0",
       "license": "MIT",
       "category": "Engineering",
       "homepage": "https://github.com/dbachelder/slop-review",
@@ -23,6 +23,7 @@
         "code-review",
         "monaco",
         "glimpse",
+        "pi",
         "slop"
       ],
       "source": {
