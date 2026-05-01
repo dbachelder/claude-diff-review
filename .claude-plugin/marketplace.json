@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-diff-review",
+  "description": "Single-plugin marketplace exposing claude-diff-review as a Claude Code plugin.",
+  "owner": {
+    "name": "Dan Bachelder",
+    "url": "https://github.com/dbachelder"
+  },
+  "plugins": [
+    {
+      "name": "claude-diff-review",
+      "source": "./",
+      "description": "Native diff review window for Claude Code (Monaco + Glimpse). Adds the /diff-review slash command.",
+      "version": "0.2.0",
+      "license": "MIT",
+      "category": "development",
+      "homepage": "https://github.com/dbachelder/claude-diff-review",
+      "keywords": [
+        "diff",
+        "review",
+        "code-review",
+        "monaco",
+        "glimpse"
+      ]
+    }
+  ]
+}

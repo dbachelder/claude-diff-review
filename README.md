@@ -39,6 +39,47 @@ Glimpse supports Windows, but the native host build during install requires:
 
 ## Install
 
+### Recommended: as a Claude Code plugin
+
+```bash
+# inside Claude Code
+/plugin marketplace add dbachelder/claude-diff-review
+/plugin install claude-diff-review@claude-diff-review
+```
+
+That registers the `/diff-review` slash command. The first time you run it, the
+command transparently fetches the `claude-diff-review` npm package via `npx -y`
+(which also pulls in [`glimpseui`](https://www.npmjs.com/package/glimpseui) and
+builds its native helper for your platform). Subsequent runs hit the npx cache
+and are fast.
+
+> **macOS toolchain:** building the Glimpse native helper needs Xcode Command
+> Line Tools (`xcode-select --install`). The CLI does a preflight check and
+> prints an actionable error if the build was skipped, instead of crashing.
+
+If you'd rather avoid the npx round-trip on first use, install the npm package
+globally as well — the slash command will then prefer it over `npx`:
+
+```bash
+npm install -g claude-diff-review
+```
+
+### Alternative: npm global only (no plugin)
+
+If you don't want to use the plugin system, install the CLI globally and copy
+the slash command into `~/.claude/commands/`:
+
+```bash
+npm install -g claude-diff-review
+# then either:
+curl -fsSL https://raw.githubusercontent.com/dbachelder/claude-diff-review/main/commands/diff-review.md \
+  -o ~/.claude/commands/diff-review.md
+# or, if you cloned the repo:
+npm run install-command
+```
+
+### Development install
+
 ```bash
 git clone https://github.com/dbachelder/claude-diff-review.git
 cd claude-diff-review
@@ -132,6 +173,9 @@ the chat as a regular tool call with the full file contents.
 
 ```
 claude-diff-review/
+├── .claude-plugin/
+│   ├── plugin.json               # Claude Code plugin manifest
+│   └── marketplace.json          # Single-plugin marketplace manifest
 ├── bin/
 │   └── claude-diff-review.js     # CLI entry point
 ├── src/

@@ -1,6 +1,6 @@
 {
   "name": "claude-diff-review",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Native diff review window for Claude Code — opens a Monaco-powered review UI in a Glimpse window and feeds the resulting prompt back into Claude Code via a slash command. Adapted from badlogic/pi-diff-review.",
   "license": "MIT",
   "author": "Dan Bachelder <dbachelder@users.noreply.github.com>",
@@ -22,6 +22,7 @@
     "web",
     "commands",
     "scripts",
+    ".claude-plugin",
     "README.md",
     "LICENSE"
   ],

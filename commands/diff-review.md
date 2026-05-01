@@ -1,12 +1,12 @@
 ---
 description: Open a native diff review window (Monaco-powered) and address the resulting feedback
-allowed-tools: Bash(claude-diff-review:*), Read
+allowed-tools: Bash(claude-diff-review:*), Bash(npx:*), Read
 argument-hint: "[base|last-commit|uncommitted|all] [--base <ref>]"
 ---
 
 ## Native review tool output
 
-!`claude-diff-review $ARGUMENTS`
+!`command -v claude-diff-review >/dev/null 2>&1 && claude-diff-review $ARGUMENTS || npx -y claude-diff-review@latest $ARGUMENTS`
 
 ## Your task
 

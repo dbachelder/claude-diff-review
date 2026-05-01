@@ -1,0 +1,19 @@
+{
+  "name": "claude-diff-review",
+  "description": "Native, Monaco-powered diff review window for Claude Code. Browse changes since the merge-base with your base branch (or last commit / uncommitted), leave inline + file-level + overall comments, and have Claude Code address each item.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Dan Bachelder",
+    "url": "https://github.com/dbachelder"
+  },
+  "homepage": "https://github.com/dbachelder/claude-diff-review",
+  "repository": "https://github.com/dbachelder/claude-diff-review",
+  "license": "MIT",
+  "keywords": [
+    "diff",
+    "review",
+    "code-review",
+    "monaco",
+    "glimpse"
+  ]
+}

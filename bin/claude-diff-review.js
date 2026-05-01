@@ -22,9 +22,11 @@
 // On cancel / window close: prints "REVIEW_CANCELLED" to stdout.
 // On error: prints message to stderr and exits 1.
 
+import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { open } from "glimpseui";
 import {
   getRepoRoot,
@@ -97,6 +99,37 @@ function log(...args) {
   process.stderr.write(args.join(" ") + "\n");
 }
 
+// glimpseui's postinstall builds a per-platform native helper (Swift on macOS,
+// cargo on Linux, dotnet on Windows). When the toolchain is missing it skips
+// the build and writes a `.glimpse-build-skipped` marker. We surface that as a
+// clear, actionable error instead of letting glimpseui blow up later.
+function preflightGlimpse() {
+  let glimpseEntry;
+  try {
+    const require = createRequire(import.meta.url);
+    glimpseEntry = require.resolve("glimpseui");
+  } catch {
+    process.stderr.write(
+      "glimpseui is not installed. Install it with `npm i -g claude-diff-review`,\n" +
+      "or invoke this CLI via `npx -y claude-diff-review`.\n",
+    );
+    process.exit(1);
+  }
+  // Walk up from <root>/src/glimpse.mjs to <root>/. The marker is written there
+  // by glimpseui's scripts/postinstall.mjs when the native build is skipped.
+  const marker = join(dirname(dirname(glimpseEntry)), ".glimpse-build-skipped");
+  if (existsSync(marker)) {
+    const detail = readFileSync(marker, "utf8").trim();
+    process.stderr.write(
+      `glimpseui's native helper was not built:\n  ${detail}\n\n` +
+      "After installing the required toolchain, run:\n" +
+      "  npm rebuild -g glimpseui    # if installed globally\n" +
+      "  npm rebuild glimpseui       # if installed locally\n",
+    );
+    process.exit(1);
+  }
+}
+
 async function resolveScopeContext(repoRoot, args) {
   // Returns { gitDiffOriginalRef, scopeLabels, scopeHints, baseRefName, baseRefShort }
   if (args.scope !== "base") {
@@ -142,6 +175,8 @@ async function main() {
     process.stdout.write(HELP);
     return;
   }
+
+  preflightGlimpse();
 
   const cwd = process.cwd();
   const repoRoot = await getRepoRoot(cwd);
