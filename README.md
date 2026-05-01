@@ -39,7 +39,7 @@ Glimpse supports Windows, but the native host build during install requires:
 
 ## Install
 
-### Recommended: as a Claude Code plugin
+### Recommended: as a Claude Code plugin (no npm publish required)
 
 ```bash
 # inside Claude Code
@@ -47,18 +47,24 @@ Glimpse supports Windows, but the native host build during install requires:
 /plugin install claude-diff-review@claude-diff-review
 ```
 
-That registers the `/diff-review` slash command. The first time you run it, the
-command transparently fetches the `claude-diff-review` npm package via `npx -y`
-(which also pulls in [`glimpseui`](https://www.npmjs.com/package/glimpseui) and
-builds its native helper for your platform). Subsequent runs hit the npx cache
-and are fast.
+That clones this repo into Claude Code's plugin cache and registers the
+`/diff-review` slash command. The slash command runs the CLI directly out of
+the plugin checkout via `${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh`, which on
+first use does a one-time `npm install` inside the plugin directory — that's
+what installs [`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds
+its per-platform native helper.
+
+No npm publish is involved: code updates flow through `/plugin update` (which
+pulls fresh commits from GitHub), and a stamp file in `node_modules/` makes
+`plugin-run.sh` re-run `npm install` only when `package.json` changes.
 
 > **macOS toolchain:** building the Glimpse native helper needs Xcode Command
 > Line Tools (`xcode-select --install`). The CLI does a preflight check and
 > prints an actionable error if the build was skipped, instead of crashing.
 
-If you'd rather avoid the npx round-trip on first use, install the npm package
-globally as well — the slash command will then prefer it over `npx`:
+If you'd rather skip the first-run install step, you can also install the CLI
+globally — the slash command will prefer a globally-installed binary over the
+plugin-local install:
 
 ```bash
 npm install -g claude-diff-review
@@ -177,7 +183,8 @@ claude-diff-review/
 │   ├── plugin.json               # Claude Code plugin manifest
 │   └── marketplace.json          # Single-plugin marketplace manifest
 ├── bin/
-│   └── claude-diff-review.js     # CLI entry point
+│   ├── claude-diff-review.js     # CLI entry point
+│   └── plugin-run.sh             # Slash-command dispatcher (plugin install)
 ├── src/
 │   ├── git.js
 │   ├── prompt.js

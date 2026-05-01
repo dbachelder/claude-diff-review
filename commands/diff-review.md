@@ -1,12 +1,12 @@
 ---
 description: Open a native diff review window (Monaco-powered) and address the resulting feedback
-allowed-tools: Bash(claude-diff-review:*), Bash(npx:*), Read
+allowed-tools: Bash(claude-diff-review:*), Bash(bash:*), Bash(npx:*), Read
 argument-hint: "[base|last-commit|uncommitted|all] [--base <ref>]"
 ---
 
 ## Native review tool output
 
-!`command -v claude-diff-review >/dev/null 2>&1 && claude-diff-review $ARGUMENTS || npx -y claude-diff-review@latest $ARGUMENTS`
+!`if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" ]; then bash "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS; elif command -v claude-diff-review >/dev/null 2>&1; then claude-diff-review $ARGUMENTS; else echo "claude-diff-review is not available. Install the plugin (/plugin install claude-diff-review@claude-diff-review) or run: npm install -g claude-diff-review" >&2; exit 1; fi`
 
 ## Your task
 

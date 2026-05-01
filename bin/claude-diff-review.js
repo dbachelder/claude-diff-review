@@ -110,8 +110,9 @@ function preflightGlimpse() {
     glimpseEntry = require.resolve("glimpseui");
   } catch {
     process.stderr.write(
-      "glimpseui is not installed. Install it with `npm i -g claude-diff-review`,\n" +
-      "or invoke this CLI via `npx -y claude-diff-review`.\n",
+      "glimpseui is not installed. If you're running this directly, do `npm install`\n" +
+      "in the project root. If you're running via the Claude Code plugin, the\n" +
+      "plugin-run.sh dispatcher should have done that for you — please file a bug.\n",
     );
     process.exit(1);
   }
