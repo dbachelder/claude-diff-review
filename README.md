@@ -17,6 +17,118 @@ All three:
 
 ![slop-review reviewing its own README change](docs/screenshot.png)
 
+## Install
+
+Three hosts, three install paths. All three end with the same review window.
+
+### pi
+
+```bash
+# Recommended: from npm (also lists on https://pi.dev/packages)
+pi install npm:pi-slop-review
+
+# Or from GitHub (handy for unreleased commits)
+pi install git:github.com/dbachelder/slop-review
+
+# Or pin to a tag
+pi install git:github.com/dbachelder/slop-review@v0.5.0
+
+# Or try without installing (single-run)
+pi -e npm:pi-slop-review
+```
+
+Then inside pi:
+
+```
+/slop-review                       # default: PR-style review
+/slop-review last-commit
+/slop-review --base origin/develop
+```
+
+When you submit feedback, the composed prompt drops into pi's input editor
+(idiomatic for pi — same UX as the upstream `pi-diff-review`). Press
+`Escape` while the window is open to cancel.
+
+> **Note on the npm name.** The npm package is `pi-slop-review` (matches
+> pi.dev's gallery `pi-<name>` convention). The slash command, the bin name,
+> and the plugin name everywhere else are still `slop-review`.
+
+### Claude Code
+
+```bash
+# inside Claude Code
+/plugin marketplace add dbachelder/slop-review
+/plugin install slop-review@slop-review
+```
+
+This registers the `/slop-review` slash command.
+
+### Codex CLI
+
+Codex separates marketplace registration (CLI) from plugin enablement (TUI).
+Both steps are required:
+
+```bash
+# 1. Register the marketplace
+codex plugin marketplace add dbachelder/slop-review
+```
+
+```
+# 2. Inside `codex`, type:
+/plugins
+```
+
+In the plugin browser, switch to the `Slop Review` (slop-review) marketplace
+tab, select the `slop-review` plugin, and press *Install plugin*. This enables
+the `slop-review` skill, which the model auto-loads when you ask it to review
+your changes (or which you can invoke explicitly with `@slop-review`).
+
+> **Why a skill instead of a slash command in Codex?** Codex's plugin system
+> doesn't expose user-defined slash commands; it uses *skills* (markdown the
+> model loads when descriptions match the user's intent) and `@`-invocation.
+
+If you prefer to skip the TUI, enable the plugin by editing
+`~/.codex/config.toml`:
+
+```toml
+[plugins."slop-review@slop-review"]
+enabled = true
+```
+
+Then restart Codex.
+
+### How updates flow
+
+| Host | Install source | Update command |
+|---|---|---|
+| pi | npm (`pi-slop-review`) or GitHub clone | `pi update` |
+| Claude Code | GitHub marketplace (`dbachelder/slop-review`) | `/plugin update` |
+| Codex CLI | GitHub marketplace (`dbachelder/slop-review`) | `codex plugin marketplace upgrade slop-review` |
+
+For Claude Code and Codex, the GitHub marketplace clone runs a one-time
+`npm install` inside the plugin checkout on first invocation — that's what
+installs [`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds
+its per-platform native helper. Codex sets `CLAUDE_PLUGIN_ROOT` for plugin
+shell calls so the same dispatcher works in both agents with no
+special-casing. A stamp file under `plugin/node_modules/` makes the
+dispatcher skip `npm install` unless `plugin/package.json` actually
+changed.
+
+### Standalone CLI / development install
+
+```bash
+git clone https://github.com/dbachelder/slop-review.git
+cd slop-review/plugin
+npm install
+npm install -g .                # puts `slop-review` on PATH as a standalone binary
+npm run install-command         # copies commands/slop-review.md → ~/.claude/commands/
+```
+
+All the plugin contents live under `slop-review/plugin/`. The top-level
+`slop-review/` directory holds only the two marketplace manifests, the
+root `package.json` (which exists solely to point pi's `git:` install at
+the extension under `./plugin/`), and `README` / `LICENSE` / `NOTICE`.
+
 ## Credit
 
 This is a fork of **[badlogic/pi-diff-review](https://github.com/badlogic/pi-diff-review)** by [Mario Zechner](https://github.com/badlogic), which provides the same UI for [`pi`](https://pi.dev). All of the heavy lifting — the Glimpse window orchestration, the Monaco-based review UI, the comment-and-prompt pipeline, and the in-terminal Escape-to-cancel waiting overlay (in our pi adapter) — was designed and implemented there. This repo:
@@ -51,166 +163,6 @@ Glimpse supports Windows, but the native host build during install requires:
 
 - .NET 8 SDK
 - Microsoft Edge WebView2 Runtime
-
-## Install
-
-### Recommended: as an agent plugin (no npm publish required)
-
-The repo doubles as a single-plugin marketplace for both Claude Code and Codex
-CLI, served straight from GitHub.
-
-**Claude Code:**
-
-```bash
-# inside Claude Code
-/plugin marketplace add dbachelder/slop-review
-/plugin install slop-review@slop-review
-```
-
-This registers the `/slop-review` slash command.
-
-**Codex CLI:**
-
-Codex separates marketplace registration (CLI) from plugin enablement (TUI).
-Both steps are required:
-
-```bash
-# 1. Register the marketplace
-codex plugin marketplace add dbachelder/slop-review
-```
-
-```
-# 2. Inside `codex`, type:
-/plugins
-```
-
-In the plugin browser, switch to the `Slop Review` (slop-review) marketplace
-tab, select the `slop-review` plugin, and press *Install plugin*. This enables
-the `slop-review` skill, which the model auto-loads when you ask it to review
-your changes (or which you can invoke explicitly with `@slop-review`).
-
-> **Why a skill instead of a slash command in Codex?** Codex's plugin system
-> doesn't expose user-defined slash commands; it uses *skills* (markdown the
-> model loads when descriptions match the user's intent) and `@`-invocation.
-> The same repo serves the slash command to Claude Code via `commands/` and
-> the skill to Codex via `skills/`, both pointing at the same dispatcher.
-
-If you prefer to skip the TUI, you can enable the plugin by editing
-`~/.codex/config.toml` directly:
-
-```toml
-[plugins."slop-review@slop-review"]
-enabled = true
-```
-
-Then restart Codex.
-
-**pi:**
-
-pi's package system handles the install end-to-end — `pi install` clones the
-repo into pi's package directory, runs `npm install` for `glimpseui`, and
-registers the `/slop-review` command:
-
-```bash
-# Global install
-pi install git:github.com/dbachelder/slop-review
-
-# Or pin to a tag
-pi install git:github.com/dbachelder/slop-review@v0.4.5
-
-# Or try without installing (single-run)
-pi -e git:github.com/dbachelder/slop-review
-```
-
-Then inside pi:
-
-```
-/slop-review                       # default: PR-style review
-/slop-review last-commit
-/slop-review --base origin/develop
-```
-
-When you submit feedback, the composed prompt is dropped into pi's input
-editor (idiomatic for pi — same UX as the upstream `pi-diff-review`). Press
-`Escape` while the window is open to cancel.
-
-To update later: `pi update` or `pi update git:github.com/dbachelder/slop-review`.
-
-**How all three paths work**
-
-Three thin host adapters, one shared core:
-
-| Host | Adapter | How it surfaces in the host | Result delivery |
-|---|---|---|---|
-| Claude Code | `plugin/commands/slop-review.md` → `plugin/bin/plugin-run.sh` → `plugin/bin/slop-review.js` | `/slop-review` slash command | Temp file path + agent `Read`s it back |
-| Codex CLI | `plugin/skills/slop-review/SKILL.md` → `plugin/bin/plugin-run.sh` → `plugin/bin/slop-review.js` | `slop-review` skill (auto-load + `@slop-review`) | Temp file path + agent `Read`s it back |
-| pi | `plugin/extensions/pi/index.ts` — uses `pi.exec` and `glimpseui` directly, no CLI | `/slop-review` slash command | `ctx.ui.setEditorText(prompt)` — prompt drops into pi's input editor |
-
-All three share `plugin/src/git.js` (factory pattern — host injects an `exec`
-callable), `plugin/src/prompt.js`, `plugin/src/ui.js`, and the `plugin/web/`
-Monaco bundle.
-
-For Claude Code and Codex, either install clones this repo into the agent's
-plugin cache; `plugin/bin/plugin-run.sh` does a one-time `npm install` inside the
-plugin directory on first invocation — that's what installs
-[`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds its
-per-platform native helper. Codex sets `CLAUDE_PLUGIN_ROOT` for plugin shell
-calls (confirmed in the codex-cli 0.128 binary), so the same dispatcher works
-in both agents with no special-casing.
-
-For pi, `pi install` handles the clone + `npm install` for you.
-
-No npm publish is involved: code updates flow through your agent's update
-command — `/plugin update` in Claude Code, `codex plugin marketplace upgrade`
-in Codex, `pi update` in pi. A stamp file in `node_modules/` makes
-`plugin-run.sh` re-run `npm install` only when `package.json` changes (for
-Claude/Codex). pi handles dep refresh on its own.
-
-> **macOS toolchain:** building the Glimpse native helper needs Xcode Command
-> Line Tools (`xcode-select --install`). The CLI does a preflight check and
-> prints an actionable error if the build was skipped, instead of crashing.
-
-If you'd rather skip the first-run install step, you can also install the CLI
-globally from the cloned repo — the slash command will prefer a
-globally-installed binary over the plugin-local install:
-
-```bash
-git clone https://github.com/dbachelder/slop-review.git
-cd slop-review/plugin
-npm install -g .
-```
-
-(Slop-review isn't published to npm; install from the git checkout instead.)
-
-### Alternative: npm global only (no plugin)
-
-If you don't want to use the plugin system, install the CLI globally and copy
-the slash command into `~/.claude/commands/`:
-
-```bash
-git clone https://github.com/dbachelder/slop-review.git
-cd slop-review/plugin
-npm install -g .
-# then either:
-curl -fsSL https://raw.githubusercontent.com/dbachelder/slop-review/main/plugin/commands/slop-review.md \
-  -o ~/.claude/commands/slop-review.md
-# or, from the cloned repo:
-npm run install-command
-```
-
-### Development install
-
-```bash
-git clone https://github.com/dbachelder/slop-review.git
-cd slop-review/plugin
-npm install
-npm install -g .          # puts `slop-review` on your PATH
-npm run install-command   # copies commands/slop-review.md → ~/.claude/commands/
-```
-
-Note that all the plugin contents live under `slop-review/plugin/` — the
-top-level `slop-review/` directory only holds the two marketplace manifests
-and `README` / `LICENSE` / `NOTICE`.
 
 ## Usage
 
@@ -339,7 +291,14 @@ slop-review/
 │   └── marketplace.json          # Claude Code marketplace (string source: "./plugin")
 ├── .agents/plugins/
 │   └── marketplace.json          # Codex CLI marketplace (object source, path: "./plugin")
+├── .github/workflows/
+│   └── publish-npm.yml           # publishes plugin/ to npm on `v*` tag push
+├── package.json                  # ROOT manifest — read only by `pi install git:`
+│                                  # so pi finds `pi.extensions: ./plugin/extensions/pi/index.ts`
+├── docs/
+│   └── screenshot.png            # README image
 ├── plugin/                       # Actual plugin contents — both marketplaces point here
+│                                  # AND this is what gets published to npm as `pi-slop-review`
 │   ├── .claude-plugin/
 │   │   └── plugin.json           # Claude Code plugin manifest
 │   ├── .codex-plugin/
@@ -366,16 +325,23 @@ slop-review/
 │   │       └── types.ts          # wire-format types for the Glimpse ↔ host channel
 │   ├── scripts/
 │   │   └── install-command.js
-│   └── package.json              # bin: slop-review; pi.extensions: extensions/pi/index.ts
+│   └── package.json              # name: pi-slop-review; bin: slop-review;
+│                                  # pi.extensions: extensions/pi/index.ts
 ├── LICENSE
 ├── NOTICE
 └── README.md
 ```
 
-The top-level `marketplace.json` files exist only to point each agent at
-`./plugin/`. Codex's marketplace path validator rejects `./` outright
-(`local plugin source path must not be empty`), so the actual plugin lives
-in a real subdirectory.
+Two `package.json` files is the floor: Claude Code and Codex only see the
+contents of `./plugin/` after install (their marketplace path points
+there), so the npm-publishable plugin manifest must live inside `./plugin/`.
+pi's `git:` install reads `package.json` at the cloned repo root, so a thin
+root manifest is needed there too. The two files describe the same plugin
+for different consumers; only `plugin/package.json` is published to npm.
+
+Codex's marketplace path validator rejects `./` outright
+(`local plugin source path must not be empty`), which is why the actual
+plugin lives in `./plugin/` instead of at the repo root.
 
 
 ## Differences from the upstream pi extension

@@ -1,0 +1,102 @@
+name: Publish to npm
+
+# Publishes ./plugin/ to npm as `pi-slop-review` whenever a tag of the form
+# vN.N.N is pushed. The workflow refuses to publish if package.json's version
+# does not match the tag, and skips silently if the version is already on the
+# registry (so re-running on an existing tag is a no-op).
+#
+# Setup required (one-time):
+#   1. npm: create an automation/granular access token with publish rights
+#      for `pi-slop-review` (see https://docs.npmjs.com/creating-and-viewing-access-tokens).
+#   2. GitHub: Settings -> Secrets and variables -> Actions -> New repository
+#      secret. Name it NPM_TOKEN, paste the npm token.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v0.5.0). Must already exist."
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # for npm provenance attestation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Resolve tag and package version
+        id: versions
+        working-directory: plugin
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            tag="${{ github.event.inputs.tag }}"
+          fi
+          tag_version="${tag#v}"
+          pkg_version=$(node -p "require('./package.json').version")
+          pkg_name=$(node -p "require('./package.json').name")
+          echo "tag=$tag"            >> "$GITHUB_OUTPUT"
+          echo "tag_version=$tag_version" >> "$GITHUB_OUTPUT"
+          echo "pkg_version=$pkg_version" >> "$GITHUB_OUTPUT"
+          echo "pkg_name=$pkg_name"  >> "$GITHUB_OUTPUT"
+          echo "Tag:           $tag"
+          echo "Tag version:   $tag_version"
+          echo "Package name:  $pkg_name"
+          echo "Pkg version:   $pkg_version"
+
+      - name: Verify tag matches package.json version
+        run: |
+          if [ "${{ steps.versions.outputs.tag_version }}" != "${{ steps.versions.outputs.pkg_version }}" ]; then
+            echo "::error::Tag ${{ steps.versions.outputs.tag }} does not match plugin/package.json version ${{ steps.versions.outputs.pkg_version }}."
+            echo "::error::Bump the version field, retag, and push again."
+            exit 1
+          fi
+
+      - name: Check if version already published
+        id: already
+        run: |
+          name="${{ steps.versions.outputs.pkg_name }}"
+          version="${{ steps.versions.outputs.pkg_version }}"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "Version $name@$version already exists on the registry; skipping publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.already.outputs.skip != 'true'
+        working-directory: plugin
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: Publish
+        if: steps.already.outputs.skip != 'true'
+        working-directory: plugin
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.already.outputs.skip }}" = "true" ]; then
+            echo "### \`${{ steps.versions.outputs.pkg_name }}@${{ steps.versions.outputs.pkg_version }}\` was already on npm — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Published \`${{ steps.versions.outputs.pkg_name }}@${{ steps.versions.outputs.pkg_version }}\` to npm." >> "$GITHUB_STEP_SUMMARY"
+            echo "https://www.npmjs.com/package/${{ steps.versions.outputs.pkg_name }}/v/${{ steps.versions.outputs.pkg_version }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
