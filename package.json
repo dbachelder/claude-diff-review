@@ -1,43 +1,17 @@
 {
   "name": "slop-review",
-  "version": "0.4.2",
-  "description": "Native diff review window for AI coding agents (Claude Code, Codex CLI). Opens a Monaco-powered review UI in a Glimpse window so you can leave inline / file-level / overall comments on the agent's slop, then have the agent address each item. Adapted from badlogic/pi-diff-review.",
-  "license": "MIT",
-  "author": "Dan Bachelder <dbachelder@users.noreply.github.com>",
+  "version": "0.4.5",
+  "description": "Root manifest for pi (`pi install git:github.com/dbachelder/slop-review`). Points pi at the extension that lives under ./plugin/. Claude Code and Codex CLI ignore this file and read ./plugin/package.json instead.",
+  "private": true,
+  "type": "module",
+  "homepage": "https://github.com/dbachelder/slop-review",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dbachelder/slop-review.git"
   },
-  "homepage": "https://github.com/dbachelder/slop-review#readme",
-  "bugs": {
-    "url": "https://github.com/dbachelder/slop-review/issues"
-  },
-  "type": "module",
-  "bin": {
-    "slop-review": "bin/slop-review.js"
-  },
+  "license": "MIT",
   "pi": {
-    "extensions": ["./extensions/pi/index.ts"]
-  },
-  "files": [
-    "bin",
-    "src",
-    "web",
-    "commands",
-    "skills",
-    "extensions",
-    "scripts",
-    ".claude-plugin",
-    ".codex-plugin",
-    "README.md",
-    "LICENSE",
-    "NOTICE"
-  ],
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "install-command": "node scripts/install-command.js"
+    "extensions": ["./plugin/extensions/pi/index.ts"]
   },
   "dependencies": {
     "glimpseui": "^0.6.0"
@@ -50,18 +24,7 @@
       "optional": true
     }
   },
-  "keywords": [
-    "claude-code",
-    "codex",
-    "pi",
-    "pi-coding-agent",
-    "ai",
-    "diff",
-    "review",
-    "code-review",
-    "monaco",
-    "glimpse",
-    "slash-command",
-    "slop"
-  ]
+  "engines": {
+    "node": ">=20"
+  }
 }

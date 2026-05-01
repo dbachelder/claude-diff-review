@@ -1,18 +1,12 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "slop-review",
-  "description": "Single-plugin marketplace exposing slop-review as a plugin for Claude Code and Codex CLI.",
-  "owner": {
-    "name": "Dan Bachelder",
-    "url": "https://github.com/dbachelder"
-  },
   "interface": {
     "displayName": "Slop Review"
   },
   "plugins": [
     {
       "name": "slop-review",
-      "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds the /slop-review slash command in Claude Code, a `slop-review` skill in Codex CLI, and a pi extension exposing the same `/slop-review` command.",
+      "description": "Native diff review window (Monaco + Glimpse) for AI coding agents. Adds a `slop-review` skill in Codex CLI (and a /slop-review slash command in Claude Code + pi).",
       "version": "0.4.5",
       "license": "MIT",
       "category": "Engineering",
@@ -26,7 +20,10 @@
         "pi",
         "slop"
       ],
-      "source": "./plugin",
+      "source": {
+        "source": "local",
+        "path": "./plugin"
+      },
       "policy": {
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
