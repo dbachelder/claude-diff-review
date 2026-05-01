@@ -8,14 +8,20 @@
 # postinstall hook).
 #
 # Resolution order:
-#   1. Use $CLAUDE_PLUGIN_ROOT if set and valid (the plugin install path).
+#   1. Use $CLAUDE_PLUGIN_ROOT (Claude Code) or $CODEX_PLUGIN_ROOT (Codex CLI)
+#      if set and valid (the plugin install path).
 #   2. Otherwise resolve the script's own directory (covers `--plugin-dir`
 #      installs and direct `bash bin/plugin-run.sh` invocations).
 set -euo pipefail
 
-if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "${CLAUDE_PLUGIN_ROOT}/package.json" ]]; then
-  ROOT="${CLAUDE_PLUGIN_ROOT}"
-else
+ROOT=""
+for candidate in "${CLAUDE_PLUGIN_ROOT:-}" "${CODEX_PLUGIN_ROOT:-}"; do
+  if [[ -n "$candidate" && -f "$candidate/package.json" ]]; then
+    ROOT="$candidate"
+    break
+  fi
+done
+if [[ -z "$ROOT" ]]; then
   ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 fi
 

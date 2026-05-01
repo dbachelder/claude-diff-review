@@ -23,6 +23,7 @@
     "commands",
     "scripts",
     ".claude-plugin",
+    ".codex-plugin",
     "README.md",
     "LICENSE"
   ],

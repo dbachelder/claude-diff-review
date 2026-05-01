@@ -1,19 +1,43 @@
 ---
 description: Open a native diff review window (Monaco-powered) and address the resulting feedback
-allowed-tools: Bash(claude-diff-review:*), Bash(bash:*), Bash(npx:*), Read
 argument-hint: "[base|last-commit|uncommitted|all] [--base <ref>]"
 ---
 
-## Native review tool output
+# /diff-review
 
-!`if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" ]; then bash "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS; elif command -v claude-diff-review >/dev/null 2>&1; then claude-diff-review $ARGUMENTS; else echo "claude-diff-review is not available. Install the plugin (/plugin install claude-diff-review@claude-diff-review) or run: npm install -g claude-diff-review" >&2; exit 1; fi`
+Open the native diff review window so the user can leave inline / file-level / overall comments on the current changes, then address each comment.
 
-## Your task
+## Step 1 — run the dispatcher
 
-The block above is the stdout of `claude-diff-review`. Interpret it as follows:
+Invoke this exact shell command using your shell/bash tool. The window will block until the user clicks **Submit feedback** or closes it, so this call may take a long time — that is expected. Do **not** run anything else in parallel; wait for it to finish.
 
-- If it contains a line `FEEDBACK_FILE: <path>`, use the **Read** tool to load that file. Its contents are the user's review feedback (numbered items, possibly with an overall comment). Address each numbered item carefully. After you finish, briefly summarize what you changed.
-- If it contains `REVIEW_CANCELLED`, reply with a single short line confirming the review was cancelled and do nothing else.
-- If it contains neither (e.g. an error), reply with the error and do nothing else.
+```bash
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" ]; then
+  bash "${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS
+elif [ -n "${CODEX_PLUGIN_ROOT:-}" ] && [ -x "${CODEX_PLUGIN_ROOT}/bin/plugin-run.sh" ]; then
+  bash "${CODEX_PLUGIN_ROOT}/bin/plugin-run.sh" $ARGUMENTS
+elif command -v claude-diff-review >/dev/null 2>&1; then
+  claude-diff-review $ARGUMENTS
+else
+  echo "claude-diff-review is not available. Install the plugin via your agent's plugin/marketplace command, or run: npm install -g claude-diff-review" >&2
+  exit 1
+fi
+```
 
-Defaults: if the user invoked `/diff-review` with no arguments, the review covers all changes since the merge-base with the auto-detected base branch (`origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`). Other valid first arguments are `last-commit` (HEAD vs HEAD^), `uncommitted` (working tree vs HEAD), or `all`. Pass `--base <ref>` to override the base branch.
+Substitute the user's `$ARGUMENTS` into that block verbatim. Valid first arguments:
+
+- *(none)* — default `base` scope: all changes since the merge-base with the auto-detected base branch (`origin/HEAD` → `origin/main` → `main` → `origin/master` → `master`).
+- `last-commit` — `HEAD^ → HEAD`.
+- `uncommitted` — working-tree changes vs `HEAD`.
+- `all` — debug / browse-only.
+- `--base <ref>` — override the auto-detected base branch (only meaningful with `base`).
+
+## Step 2 — interpret the dispatcher's stdout
+
+Read the captured stdout from the previous step:
+
+- **`FEEDBACK_FILE: <absolute path>`** → use the file-reading tool to load that file. Its contents are numbered review comments, optionally with an "Overall" comment block. Address each numbered item carefully (edit code, run tests, etc.). When done, give the user a brief summary of what you changed, item by item.
+- **`REVIEW_CANCELLED`** → reply with a single short line confirming the review was cancelled. Do not do anything else.
+- **anything else** (e.g. an error) → surface the error to the user verbatim and stop.
+
+Status / progress messages from the dispatcher are written to **stderr**, not stdout, so they don't affect the parsing above.

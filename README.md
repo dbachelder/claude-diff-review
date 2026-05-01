@@ -1,6 +1,6 @@
 # claude-diff-review
 
-A native diff review window for **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)**, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/).
+A native diff review window for terminal coding agents, powered by [Glimpse](https://github.com/hazat/glimpse) and [Monaco](https://microsoft.github.io/monaco-editor/). Ships as a plugin for both **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** and **[Codex CLI](https://github.com/openai/codex)**.
 
 Adds a `/diff-review` slash command that:
 
@@ -9,7 +9,7 @@ Adds a `/diff-review` slash command that:
 3. Shows a collapsible sidebar with fuzzy file search and git status markers
 4. Lazy-loads file contents on demand as you switch files and scopes
 5. Lets you draft comments on the original side, modified side, or whole file
-6. Writes the composed feedback to a temp file when you submit, and Claude Code's `Read` tool loads it into the conversation so it's fully visible in the UI
+6. Writes the composed feedback to a temp file when you submit; the agent reads it back, so the review shows up in the chat as a regular tool call and gets addressed item-by-item
 
 ![demo placeholder](https://placehold.co/900x500?text=claude-diff-review)
 
@@ -39,7 +39,12 @@ Glimpse supports Windows, but the native host build during install requires:
 
 ## Install
 
-### Recommended: as a Claude Code plugin (no npm publish required)
+### Recommended: as an agent plugin (no npm publish required)
+
+The repo doubles as a single-plugin marketplace for both Claude Code and Codex
+CLI, served straight from GitHub.
+
+**Claude Code:**
 
 ```bash
 # inside Claude Code
@@ -47,16 +52,28 @@ Glimpse supports Windows, but the native host build during install requires:
 /plugin install claude-diff-review@claude-diff-review
 ```
 
-That clones this repo into Claude Code's plugin cache and registers the
-`/diff-review` slash command. The slash command runs the CLI directly out of
-the plugin checkout via `${CLAUDE_PLUGIN_ROOT}/bin/plugin-run.sh`, which on
-first use does a one-time `npm install` inside the plugin directory — that's
-what installs [`glimpseui`](https://www.npmjs.com/package/glimpseui) and builds
-its per-platform native helper.
+**Codex CLI:**
 
-No npm publish is involved: code updates flow through `/plugin update` (which
-pulls fresh commits from GitHub), and a stamp file in `node_modules/` makes
-`plugin-run.sh` re-run `npm install` only when `package.json` changes.
+```bash
+codex plugin marketplace add dbachelder/claude-diff-review
+codex plugin install claude-diff-review@claude-diff-review
+```
+
+(Or whichever exact plugin-install incantation your Codex version uses — the
+marketplace add is the part that matters; the plugin shows up under the
+`claude-diff-review` marketplace name.)
+
+Either path clones this repo into the agent's plugin cache and registers the
+`/diff-review` slash command. The command runs the CLI directly out of the
+plugin checkout via `${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT}}/bin/plugin-run.sh`,
+which on first use does a one-time `npm install` inside the plugin directory —
+that's what installs [`glimpseui`](https://www.npmjs.com/package/glimpseui) and
+builds its per-platform native helper.
+
+No npm publish is involved: code updates flow through your agent's plugin
+update command (which pulls fresh commits from GitHub), and a stamp file in
+`node_modules/` makes `plugin-run.sh` re-run `npm install` only when
+`package.json` changes.
 
 > **macOS toolchain:** building the Glimpse native helper needs Xcode Command
 > Line Tools (`xcode-select --install`). The CLI does a preflight check and
@@ -181,7 +198,10 @@ the chat as a regular tool call with the full file contents.
 claude-diff-review/
 ├── .claude-plugin/
 │   ├── plugin.json               # Claude Code plugin manifest
-│   └── marketplace.json          # Single-plugin marketplace manifest
+│   └── marketplace.json          # Claude Code marketplace manifest
+├── .codex-plugin/
+│   ├── plugin.json               # Codex CLI plugin manifest
+│   └── marketplace.json          # Codex CLI marketplace manifest
 ├── bin/
 │   ├── claude-diff-review.js     # CLI entry point
 │   └── plugin-run.sh             # Slash-command dispatcher (plugin install)

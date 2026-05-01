@@ -1,0 +1,20 @@
+{
+  "name": "claude-diff-review",
+  "interface": {
+    "displayName": "Diff Review",
+    "description": "Single-plugin marketplace exposing claude-diff-review for Codex CLI."
+  },
+  "plugins": [
+    {
+      "name": "claude-diff-review",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "category": "Engineering",
+      "policy": {
+        "installation": "AVAILABLE"
+      }
+    }
+  ]
+}
