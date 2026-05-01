@@ -35,6 +35,15 @@ If you only use pi and just want the upstream behavior, install [`badlogic/pi-di
 - Node.js 20+
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI](https://github.com/openai/codex), **or** [pi](https://pi.dev)
 - Internet access at runtime for the Tailwind and Monaco CDNs used by the review window
+- **Native build toolchain** — Glimpse compiles a per-platform native helper on first install:
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Linux**: Rust (https://rustup.rs) + GTK4/WebKit2GTK dev packages
+    - Fedora: `dnf install gtk4-devel webkitgtk6.0-devel gtk4-layer-shell-devel`
+    - Ubuntu: `apt install libgtk-4-dev libwebkitgtk-6.0-dev libgtk4-layer-shell-dev`
+    - Arch: `pacman -S gtk4 webkitgtk-6.0 gtk4-layer-shell`
+  - **Windows**: .NET 8 SDK
+
+  Claude Code and some other agents run `npm install --ignore-scripts` when materializing plugins, which suppresses Glimpse's normal postinstall build. `bin/plugin-run.sh` detects this and re-builds the helper explicitly on first invocation, so you'll see a one-time delay (a few seconds for Swift, longer for Rust) before the review window opens.
 
 ### Windows notes
 
