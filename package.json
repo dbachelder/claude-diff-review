@@ -1,0 +1,47 @@
+{
+  "name": "claude-diff-review",
+  "version": "0.1.0",
+  "description": "Native diff review window for Claude Code — opens a Monaco-powered review UI in a Glimpse window and feeds the resulting prompt back into Claude Code via a slash command. Adapted from badlogic/pi-diff-review.",
+  "license": "MIT",
+  "author": "Dan Bachelder <dbachelder@users.noreply.github.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dbachelder/claude-diff-review.git"
+  },
+  "homepage": "https://github.com/dbachelder/claude-diff-review#readme",
+  "bugs": {
+    "url": "https://github.com/dbachelder/claude-diff-review/issues"
+  },
+  "type": "module",
+  "bin": {
+    "claude-diff-review": "bin/claude-diff-review.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "web",
+    "commands",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "install-command": "node scripts/install-command.js"
+  },
+  "dependencies": {
+    "glimpseui": "^0.6.0"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "diff",
+    "review",
+    "code-review",
+    "monaco",
+    "glimpse",
+    "slash-command"
+  ]
+}
