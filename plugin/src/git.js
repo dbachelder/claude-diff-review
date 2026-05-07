@@ -2,7 +2,7 @@
 // Original: src/git.ts.
 //
 // Refactored to a factory pattern: callers inject an `exec` callable that
-// matches @mariozechner/pi-coding-agent's `pi.exec(command, args, opts)`
+// matches @earendil-works/pi-coding-agent's `pi.exec(command, args, opts)`
 // signature. The standalone CLI uses a `node:child_process`-backed default;
 // the pi extension passes `pi.exec` directly so git invocations show up in
 // pi's tool log.
@@ -150,7 +150,7 @@ async function getWorkingTreeContent(repoRoot, path) {
 
 /**
  * Default exec implementation used by the standalone CLI path. Shape matches
- * @mariozechner/pi-coding-agent's `pi.exec(command, args, options)`:
+ * @earendil-works/pi-coding-agent's `pi.exec(command, args, options)`:
  *
  *   exec(command: string, args: string[], options?: { cwd?, signal?, timeout? })
  *     => Promise<{ stdout: string; stderr: string; code: number; killed: boolean }>
