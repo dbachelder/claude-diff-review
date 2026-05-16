@@ -16,7 +16,7 @@
     ]
   },
   "dependencies": {
-    "glimpseui": "^0.6.0"
+    "glimpseui": "^0.8.1"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
